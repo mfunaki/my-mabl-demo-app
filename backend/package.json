@@ -1,26 +1,40 @@
 {
-  "name": "backend",
+  "name": "expense-app-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Simple Expense App Backend API with PostgreSQL",
+  "main": "dist/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "migrate": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
+    "seed": "tsx prisma/seed.ts",
+    "db:push": "prisma db push",
+    "studio": "prisma studio"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "ts-node": {
+    "compilerOptions": {
+      "module": "commonjs"
+    }
+  },
   "dependencies": {
+    "@prisma/client": "^5.9.1",
     "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
-    "express": "^5.2.1"
+    "dotenv": "^16.4.1",
+    "express": "^4.18.2"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "@types/node": "^24.10.1",
-    "nodemon": "^3.1.11",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.19.25",
+    "nodemon": "^3.0.3",
+    "prisma": "^5.9.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
   }
 }
