@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  # データベース (PostgreSQL)
+  db:
+    image: postgres:15-alpine
+    container_name: mabl-demo-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mabl_demo_app
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  # バックエンド (API)
+  # ※ 開発中はローカルのNode.jsで動かす方が速いですが、
+  #    デモで「コンテナ化されています」と見せる用に定義しておきます。
+  api:
+    build: ./backend
+    container_name: mabl-demo-api # <-- 追加しておくと便利
+    ports:
+      - "4000:4000"
+    environment:
+      DATABASE_URL: postgres://user:password@db:5432/mabl_demo_app
+    depends_on:
+      - db
+    # ホットリロードのためのボリュームマウント
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    command: npm run dev
+
+volumes:
+  db-data:
