@@ -56,3 +56,31 @@ npm run dev
 - `status-text-{id}`: ステータステキスト
 - `approve-button-{id}`: 承認ボタン
 - `reject-button-{id}`: 却下ボタン
+
+## トラブルシューティング
+
+### peer dependency エラーが出る場合
+
+**エラー:** `ERESOLVE could not resolve`
+
+**解決策:**
+
+1. `.npmrc`ファイルを作成:
+```bash
+echo "legacy-peer-deps=true" > .npmrc
+```
+
+2. クリーンインストール:
+```bash
+rm -rf node_modules package-lock.json
+npm install
+```
+
+3. それでも解決しない場合:
+```bash
+npm install --legacy-peer-deps
+```
+
+### モノレポ構成の場合
+
+各プロジェクト（`backend/`, `apps/web/`, `apps/mobile/`）は独立したnode_modulesを持ちます。必ず各ディレクトリで個別に`npm install`を実行してください。
