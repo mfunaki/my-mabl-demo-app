@@ -18,3 +18,41 @@ apps/web/ ディレクトリ内に、仕様書に基づいた Next.js (App Route
     - `http://localhost:4000/api/expenses` からデータを取得して一覧表示してください。
     - **重要:** 各行 (`tr`)、各ボタンには仕様書通りの `data-testid` (例: `expense-row-${id}`) を必ず付与してください。これがmablのテスト実行時に要素を特定する鍵となります。
     - 各行の「承認」ボタンを押すと、PATCH リクエストを送り、画面上のステータスを更新してください。
+
+---
+
+## セットアップ手順
+
+```bash
+# apps/web ディレクトリに移動
+cd apps/web
+
+# 依存パッケージのインストール
+npm install
+
+# 開発サーバーの起動（ポート 3000）
+npm run dev
+```
+
+## 動作確認
+
+1. ブラウザで `http://localhost:3000` にアクセス
+2. ログイン画面が表示される
+3. `demo-user` / `password123` でログイン
+4. ダッシュボードで経費一覧が表示される
+5. 「承認」ボタンをクリックしてステータスが更新されることを確認
+
+## 重要な data-testid 属性
+
+### ログイン画面
+- `username-input`: ユーザー名入力欄
+- `password-input`: パスワード入力欄
+- `login-button`: ログインボタン
+- `error-message`: エラーメッセージ
+
+### ダッシュボード
+- `logout-button`: ログアウトボタン
+- `expense-row-{id}`: 各経費行
+- `status-text-{id}`: ステータステキスト
+- `approve-button-{id}`: 承認ボタン
+- `reject-button-{id}`: 却下ボタン
