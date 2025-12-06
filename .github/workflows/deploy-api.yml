@@ -54,12 +54,13 @@ jobs:
 
       - name: Deploy to Cloud Run
         run: |
+          PROJECT_NUMBER=$(gcloud projects describe ${{ env.PROJECT_ID }} --format="value(projectNumber)")
           gcloud run deploy ${{ env.SERVICE_NAME }} \
             --image ${{ env.IMAGE_NAME }} \
             --platform managed \
             --region ${{ env.REGION }} \
             --allow-unauthenticated \
-            --update-secrets=DATABASE_URL=database-url:latest \
+            --update-secrets=DATABASE_URL=projects/${PROJECT_NUMBER}/secrets/database-url:latest \
             --set-env-vars "CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}" \
             --port 8080 \
             --memory 512Mi \
@@ -67,7 +68,8 @@ jobs:
             --min-instances 0 \
             --max-instances 10 \
             --timeout 300 \
-            --add-cloudsql-instances ${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
+            --add-cloudsql-instances ${{ secrets.CLOUD_SQL_CONNECTION_NAME }} \
+            --project ${{ env.PROJECT_ID }}
 
       - name: Output service URL
         run: |
