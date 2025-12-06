@@ -57,6 +57,8 @@ jobs:
         run: |
           DATABASE_URL=$(gcloud secrets versions access latest --secret=database-url --project=${{ env.PROJECT_ID }})
           echo "::add-mask::$DATABASE_URL"
+          echo "DATABASE_URL length: ${#DATABASE_URL}"
+          echo "DATABASE_URL starts with: ${DATABASE_URL:0:20}..."
           echo "DATABASE_URL=$DATABASE_URL" >> $GITHUB_OUTPUT
 
       - name: Remove existing service if exists
@@ -71,13 +73,13 @@ jobs:
         env:
           DATABASE_URL: ${{ steps.get-database-url.outputs.DATABASE_URL }}
         run: |
+          echo "Deploying with DATABASE_URL length: ${#DATABASE_URL}"
           gcloud run deploy ${{ env.SERVICE_NAME }} \
             --image ${{ env.IMAGE_NAME }} \
             --platform managed \
             --region ${{ env.REGION }} \
             --allow-unauthenticated \
-            --set-env-vars "DATABASE_URL=$DATABASE_URL" \
-            --set-env-vars "CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}" \
+            --set-env-vars "DATABASE_URL=${DATABASE_URL},CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}" \
             --port 8080 \
             --memory 512Mi \
             --cpu 1 \
