@@ -1,0 +1,26 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ExpenseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Expense {
+  id          Int           @id @default(autoincrement())
+  title       String
+  amount      Int
+  status      ExpenseStatus @default(PENDING)
+  applicantId String        @map("applicant_id")
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  @@map("expenses")
+}
