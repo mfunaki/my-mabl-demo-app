@@ -3,18 +3,25 @@ import { Expense, ExpenseStatus } from './types';
 
 export const getApiUrl = (isServer: boolean = false): string => {
   if (isServer) {
-    return process.env.INTERNAL_API_URL || 'http://backend:4000';
+    const url = process.env.INTERNAL_API_URL || 'http://backend:4000';
+    console.log('[API] Server-side API URL:', url);
+    return url;
   }
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  console.log('[API] Client-side API URL:', url);
+  return url;
 };
 
 export const createApiClient = (isServer: boolean = false, userName: string = 'manager') => {
+  const baseURL = getApiUrl(isServer);
+  console.log('[API] Creating client with baseURL:', baseURL, 'isServer:', isServer);
   return axios.create({
-    baseURL: getApiUrl(isServer),
+    baseURL,
     headers: {
       'Content-Type': 'application/json',
       'Authorization': userName,
     },
+    timeout: 10000,
   });
 };
 
