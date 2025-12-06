@@ -4,14 +4,17 @@ import { PrismaClient } from '@prisma/client';
 
 console.log('=== Application Starting ===');
 console.log('DATABASE_URL is set:', !!process.env.DATABASE_URL);
-console.log('DATABASE_URL prefix:', process.env.DATABASE_URL?.substring(0, 30) + '...');
+if (process.env.DATABASE_URL) {
+  console.log('DATABASE_URL value:', process.env.DATABASE_URL);
+}
+
+// 環境変数が設定されていることを確認
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is not set');
+}
 
 const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL,
-    },
-  },
+  datasourceUrl: process.env.DATABASE_URL,
   log: ['error', 'warn'],
 });
 
@@ -28,7 +31,6 @@ async function checkDatabase() {
     await prisma.$connect();
     console.log('✓ Database connected successfully');
     
-    // テーブルが存在するか確認（存在しない場合は手動でCREATE TABLEが必要）
     const tableCheck = await prisma.$queryRaw`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
