@@ -12,14 +12,37 @@ const prisma = new PrismaClient({
       url: process.env.DATABASE_URL,
     },
   },
-  log: ['query', 'error', 'warn'],
+  log: ['error', 'warn'],
 });
+
 const app = express();
 const PORT = process.env.PORT || 8080;
 const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:3000';
 
 app.use(cors({ origin: CORS_ORIGIN }));
 app.use(express.json());
+
+// データベース接続確認
+async function checkDatabase() {
+  try {
+    await prisma.$connect();
+    console.log('✓ Database connected successfully');
+    
+    // テーブルが存在するか確認（存在しない場合は手動でCREATE TABLEが必要）
+    const tableCheck = await prisma.$queryRaw`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'expenses'
+      );
+    `;
+    console.log('✓ Database tables check:', tableCheck);
+  } catch (error) {
+    console.error('✗ Database connection failed:', error);
+  }
+}
+
+checkDatabase();
 
 const getUserName = (req: Request): string | null => {
   const authHeader = req.headers.authorization;
@@ -123,6 +146,26 @@ app.get('/api/reset', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('GET /api/reset error:', error);
     res.status(500).json({ error: 'Internal server error', details: String(error) });
+  }
+});
+
+// POST /api/migrate - 手動マイグレーション（初回のみ実行）
+app.post('/api/migrate', async (req: Request, res: Response) => {
+  try {
+    await prisma.$executeRaw`
+      CREATE TABLE IF NOT EXISTS expenses (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'PENDING',
+        applicant_id TEXT NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    res.json({ message: 'Migration completed successfully' });
+  } catch (error) {
+    console.error('Migration error:', error);
+    res.status(500).json({ error: 'Migration failed', details: String(error) });
   }
 });
 
