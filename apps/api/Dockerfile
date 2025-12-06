@@ -28,4 +28,7 @@ COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node dist/index.js"]
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["docker-entrypoint.sh"]
