@@ -59,6 +59,14 @@ jobs:
           echo "::add-mask::$DATABASE_URL"
           echo "DATABASE_URL=$DATABASE_URL" >> $GITHUB_OUTPUT
 
+      - name: Remove existing service if exists
+        continue-on-error: true
+        run: |
+          gcloud run services delete ${{ env.SERVICE_NAME }} \
+            --region ${{ env.REGION }} \
+            --project ${{ env.PROJECT_ID }} \
+            --quiet
+
       - name: Deploy to Cloud Run
         env:
           DATABASE_URL: ${{ steps.get-database-url.outputs.DATABASE_URL }}
