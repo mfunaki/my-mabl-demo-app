@@ -61,7 +61,6 @@ jobs:
             --allow-unauthenticated \
             --update-secrets=DATABASE_URL=database-url:latest \
             --set-env-vars "CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}" \
-            --set-env-vars "PORT=8080" \
             --port 8080 \
             --memory 512Mi \
             --cpu 1 \
