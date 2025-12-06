@@ -1,1 +1,20 @@
 node_modules
+.env
+.env.local
+.env*.local
+.DS_Store
+dist
+.next
+.expo
+
+# API
+apps/api/.env
+apps/api/dist
+
+# Web
+apps/web/.env.local
+apps/web/.next
+
+# Mobile
+apps/mobile/.env
+apps/mobile/.expo
