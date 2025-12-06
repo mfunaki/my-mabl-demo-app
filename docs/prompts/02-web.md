@@ -4,19 +4,18 @@
 
 ## 参照ファイル
 * `/docs/spec-expense-app.md` (Web仕様)
-* (前工程で生成された) `apps/api/prisma/schema.prisma` (型定義の参考)
+* `/apps/api/prisma/schema.prisma` (型定義の参考)
 
 ## 要件
 1. **Tech Stack:** Next.js 14+ (App Router), TypeScript, Tailwind CSS.
 2. **Pages:**
-    * `/login`: マネージャーログイン画面。
+    * `/login`: マネージャー (`manager`/`manager123`) ログイン画面。
     * `/dashboard`: 申請一覧と承認ボタン。
 3. **API連携:**
-    * サーバーコンポーネントでデータ取得する場合はDocker内部URL (`http://backend:4000`) を使用。
-    * クライアント操作(承認ボタン等)は `NEXT_PUBLIC_API_URL` を使用。
-4. **テスト属性:**
-    * 仕様書の「5. Web仕様」に記載された `data-testid` を各要素に必ず付与すること。これがmablテストで必須となる。
+    * サーバーコンポーネント用: `INTERNAL_API_URL` (例: `http://backend:4000`)
+    * クライアントコンポーネント用: `NEXT_PUBLIC_API_URL` (例: `http://localhost:4000`)
+4. **テスト属性 (重要):**
+    * mablでのテストを可能にするため、仕様書の「5. Web仕様」に記載された `data-testid` を各要素に必ず付与すること。
+    * 特にリストの各行には `expense-row-${id}`、承認ボタンには `approve-button-${id}` を付与してください。
 
-## 成果物
-* `apps/web` 配下の主要なソースコード (`page.tsx`, `layout.tsx`, API連携ロジック等)。
-* `apps/web/Dockerfile`
+このプロンプトへの回答として、主要なソースコード（`page.tsx`, `layout.tsx`, APIクライアント等）を出力してください。
