@@ -6,10 +6,15 @@ console.log('=== Application Starting ===');
 console.log('DATABASE_URL is set:', !!process.env.DATABASE_URL);
 console.log('DATABASE_URL prefix:', process.env.DATABASE_URL?.substring(0, 30) + '...');
 
-const app = express();
 const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL,
+    },
+  },
   log: ['query', 'error', 'warn'],
 });
+const app = express();
 const PORT = process.env.PORT || 8080;
 const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:3000';
 
