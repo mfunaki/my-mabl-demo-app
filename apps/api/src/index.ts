@@ -1,21 +1,17 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import { PrismaClient } from '@prisma/client';
+import { Pool } from 'pg';
 
 console.log('=== Application Starting ===');
 console.log('DATABASE_URL is set:', !!process.env.DATABASE_URL);
-if (process.env.DATABASE_URL) {
-  console.log('DATABASE_URL value:', process.env.DATABASE_URL);
-}
 
-// 環境変数が設定されていることを確認
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL environment variable is not set');
 }
 
-const prisma = new PrismaClient({
-  datasourceUrl: process.env.DATABASE_URL,
-  log: ['error', 'warn'],
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: false,
 });
 
 const app = express();
@@ -28,17 +24,9 @@ app.use(express.json());
 // データベース接続確認
 async function checkDatabase() {
   try {
-    await prisma.$connect();
+    const client = await pool.connect();
     console.log('✓ Database connected successfully');
-    
-    const tableCheck = await prisma.$queryRaw`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'expenses'
-      );
-    `;
-    console.log('✓ Database tables check:', tableCheck);
+    client.release();
   } catch (error) {
     console.error('✗ Database connection failed:', error);
   }
@@ -51,6 +39,26 @@ const getUserName = (req: Request): string | null => {
   return authHeader || null;
 };
 
+// POST /api/migrate - テーブル作成
+app.post('/api/migrate', async (req: Request, res: Response) => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS expenses (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'PENDING',
+        applicant_id TEXT NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    res.json({ message: 'Migration completed successfully' });
+  } catch (error) {
+    console.error('Migration error:', error);
+    res.status(500).json({ error: 'Migration failed', details: String(error) });
+  }
+});
+
 // GET /api/expenses - 経費一覧取得
 app.get('/api/expenses', async (req: Request, res: Response) => {
   try {
@@ -59,19 +67,25 @@ app.get('/api/expenses', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const expenses = await prisma.expense.findMany({
-      where: userName === 'manager' ? {} : { applicantId: userName },
-      orderBy: { createdAt: 'desc' }
-    });
+    const result = userName === 'manager'
+      ? await pool.query('SELECT * FROM expenses ORDER BY created_at DESC')
+      : await pool.query('SELECT * FROM expenses WHERE applicant_id = $1 ORDER BY created_at DESC', [userName]);
 
-    res.json(expenses);
+    res.json(result.rows.map(row => ({
+      id: row.id,
+      title: row.title,
+      amount: row.amount,
+      status: row.status,
+      applicantId: row.applicant_id,
+      createdAt: row.created_at,
+    })));
   } catch (error) {
     console.error('GET /api/expenses error:', error);
     res.status(500).json({ error: 'Internal server error', details: String(error) });
   }
 });
 
-// POST /api/expenses - 経費作成 (Employeeのみ)
+// POST /api/expenses - 経費作成
 app.post('/api/expenses', async (req: Request, res: Response) => {
   try {
     const userName = getUserName(req);
@@ -85,22 +99,27 @@ app.post('/api/expenses', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const expense = await prisma.expense.create({
-      data: {
-        title,
-        amount: parseInt(amount),
-        applicantId: userName,
-      }
-    });
+    const result = await pool.query(
+      'INSERT INTO expenses (title, amount, applicant_id) VALUES ($1, $2, $3) RETURNING *',
+      [title, parseInt(amount), userName]
+    );
 
-    res.status(201).json(expense);
+    const expense = result.rows[0];
+    res.status(201).json({
+      id: expense.id,
+      title: expense.title,
+      amount: expense.amount,
+      status: expense.status,
+      applicantId: expense.applicant_id,
+      createdAt: expense.created_at,
+    });
   } catch (error) {
     console.error('POST /api/expenses error:', error);
     res.status(500).json({ error: 'Internal server error', details: String(error) });
   }
 });
 
-// PATCH /api/expenses/:id/status - ステータス更新 (Managerのみ)
+// PATCH /api/expenses/:id/status - ステータス更新
 app.patch('/api/expenses/:id/status', async (req: Request, res: Response) => {
   try {
     const userName = getUserName(req);
@@ -115,12 +134,24 @@ app.patch('/api/expenses/:id/status', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Invalid status' });
     }
 
-    const expense = await prisma.expense.update({
-      where: { id: parseInt(id) },
-      data: { status }
-    });
+    const result = await pool.query(
+      'UPDATE expenses SET status = $1 WHERE id = $2 RETURNING *',
+      [status, parseInt(id)]
+    );
 
-    res.json(expense);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Expense not found' });
+    }
+
+    const expense = result.rows[0];
+    res.json({
+      id: expense.id,
+      title: expense.title,
+      amount: expense.amount,
+      status: expense.status,
+      applicantId: expense.applicant_id,
+      createdAt: expense.created_at,
+    });
   } catch (error) {
     console.error('PATCH /api/expenses/:id/status error:', error);
     res.status(500).json({ error: 'Internal server error', details: String(error) });
@@ -130,44 +161,12 @@ app.patch('/api/expenses/:id/status', async (req: Request, res: Response) => {
 // POST /api/reset - データリセット
 app.post('/api/reset', async (req: Request, res: Response) => {
   try {
-    await prisma.expense.deleteMany({});
-    await prisma.$executeRaw`ALTER SEQUENCE expenses_id_seq RESTART WITH 1`;
+    await pool.query('DELETE FROM expenses');
+    await pool.query('ALTER SEQUENCE expenses_id_seq RESTART WITH 1');
     res.json({ message: 'All expenses deleted' });
   } catch (error) {
     console.error('POST /api/reset error:', error);
     res.status(500).json({ error: 'Internal server error', details: String(error) });
-  }
-});
-
-// GET /api/reset - データリセット (ブラウザアクセス用)
-app.get('/api/reset', async (req: Request, res: Response) => {
-  try {
-    await prisma.expense.deleteMany({});
-    await prisma.$executeRaw`ALTER SEQUENCE expenses_id_seq RESTART WITH 1`;
-    res.json({ message: 'All expenses deleted' });
-  } catch (error) {
-    console.error('GET /api/reset error:', error);
-    res.status(500).json({ error: 'Internal server error', details: String(error) });
-  }
-});
-
-// POST /api/migrate - 手動マイグレーション（初回のみ実行）
-app.post('/api/migrate', async (req: Request, res: Response) => {
-  try {
-    await prisma.$executeRaw`
-      CREATE TABLE IF NOT EXISTS expenses (
-        id SERIAL PRIMARY KEY,
-        title TEXT NOT NULL,
-        amount INTEGER NOT NULL,
-        status TEXT NOT NULL DEFAULT 'PENDING',
-        applicant_id TEXT NOT NULL,
-        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-      );
-    `;
-    res.json({ message: 'Migration completed successfully' });
-  } catch (error) {
-    console.error('Migration error:', error);
-    res.status(500).json({ error: 'Migration failed', details: String(error) });
   }
 });
 
