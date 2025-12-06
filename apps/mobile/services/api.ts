@@ -1,9 +1,27 @@
 import axios from 'axios';
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 import { Expense, ExpenseFormData } from '../types/expense';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:4000';
+// Androidエミュレータ用の特別なIPアドレス
+const getApiUrl = () => {
+  const configUrl = Constants.expoConfig?.extra?.apiUrl;
+  
+  if (configUrl) {
+    return configUrl;
+  }
+  
+  // デフォルト: プラットフォームに応じて切り替え
+  if (Platform.OS === 'android') {
+    return 'http://10.0.2.2:4000';
+  }
+  
+  return 'http://localhost:4000';
+};
 
+const API_URL = getApiUrl();
+
+console.log('[Mobile API] Platform:', Platform.OS);
 console.log('[Mobile API] Using API URL:', API_URL);
 
 const createApiClient = (userName: string = 'employee') => {

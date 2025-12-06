@@ -10,7 +10,18 @@ module.exports = {
     },
     android: {
       package: 'com.expense.mobile',
+      usesCleartextTraffic: true,
     },
+    plugins: [
+      [
+        'expo-build-properties',
+        {
+          android: {
+            usesCleartextTraffic: true,
+          },
+        },
+      ],
+    ],
     extra: {
       apiUrl: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000',
     },
