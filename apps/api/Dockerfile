@@ -5,13 +5,7 @@ RUN apk add --no-cache openssl libc6-compat
 WORKDIR /app
 
 COPY package*.json ./
-COPY prisma ./prisma
-
 RUN npm install
-
-# ビルド時のプレースホルダー
-ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
-RUN npx prisma generate
 
 COPY . .
 RUN npm run build
@@ -27,7 +21,6 @@ ENV NODE_ENV=production
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 8080
 

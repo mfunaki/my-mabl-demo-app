@@ -21,11 +21,25 @@ const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:3000';
 app.use(cors({ origin: CORS_ORIGIN }));
 app.use(express.json());
 
-// データベース接続確認
+// データベース接続確認とテーブル自動作成
 async function checkDatabase() {
   try {
     const client = await pool.connect();
     console.log('✓ Database connected successfully');
+    
+    // テーブルが存在しない場合は自動作成
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS expenses (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'PENDING',
+        applicant_id TEXT NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('✓ Database schema initialized');
+    
     client.release();
   } catch (error) {
     console.error('✗ Database connection failed:', error);
@@ -39,7 +53,7 @@ const getUserName = (req: Request): string | null => {
   return authHeader || null;
 };
 
-// POST /api/migrate - テーブル作成
+// POST /api/migrate - 手動マイグレーション（互換性のため残す）
 app.post('/api/migrate', async (req: Request, res: Response) => {
   try {
     await pool.query(`
