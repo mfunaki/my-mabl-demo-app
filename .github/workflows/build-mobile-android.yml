@@ -82,7 +82,8 @@ jobs:
             --non-interactive \
             --json > build-output.json
           
-          BUILD_ID=$(jq -r '.id' build-output.json)
+          cat build-output.json
+          BUILD_ID=$(jq -r '.[0].id // .id' build-output.json)
           echo "Build ID: $BUILD_ID"
           echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
 
