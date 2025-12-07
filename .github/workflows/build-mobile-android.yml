@@ -101,12 +101,13 @@ jobs:
             STATUS=$(eas build:view $BUILD_ID --json | jq -r '.status')
             echo "Build status: $STATUS (elapsed: ${ELAPSED}s)"
             
-            if [ "$STATUS" = "finished" ]; then
+            # EAS Buildのステータスは大文字 (FINISHED, ERRORED, CANCELED など)
+            if [ "$STATUS" = "FINISHED" ] || [ "$STATUS" = "finished" ]; then
               echo "Build completed successfully!"
               APK_URL=$(eas build:view $BUILD_ID --json | jq -r '.artifacts.buildUrl')
               echo "apk_url=$APK_URL" >> $GITHUB_OUTPUT
               break
-            elif [ "$STATUS" = "errored" ] || [ "$STATUS" = "canceled" ]; then
+            elif [ "$STATUS" = "ERRORED" ] || [ "$STATUS" = "errored" ] || [ "$STATUS" = "CANCELED" ] || [ "$STATUS" = "canceled" ]; then
               echo "Build failed with status: $STATUS"
               exit 1
             fi
