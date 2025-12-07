@@ -183,20 +183,10 @@ jobs:
           fi
 
       - name: Commit version bump
-        if: github.event_name == 'push'
-        env:
-          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+        if: false  # バージョン管理を無効化
         run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add apps/mobile/package.json apps/mobile/app.config.js
-          
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "chore: bump mobile version to ${{ steps.version.outputs.new_version }} [skip ci]"
-            git push
-          fi
+          # このステップはスキップされる
+          echo "Version bump commit is disabled"
 
       - name: Create Release
         if: github.event_name == 'push'
