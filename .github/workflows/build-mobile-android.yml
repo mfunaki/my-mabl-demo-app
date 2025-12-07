@@ -140,18 +140,31 @@ jobs:
           echo "apk_file=$APK_FILE" >> $GITHUB_OUTPUT
 
       - name: Install mabl CLI
-        run: npm install -g @mablhq/mabl-cli
+        run: |
+          npm install -g @mablhq/mabl-cli
+          mabl --version
 
       - name: Upload APK to mabl
         working-directory: apps/mobile
         env:
           MABL_API_KEY: ${{ secrets.MABL_API_KEY }}
         run: |
+          echo "Checking APK file..."
+          ls -lh ${{ steps.download.outputs.apk_file }}
+          
+          echo "Uploading to mabl..."
+          echo "App ID: ${{ secrets.MABL_APP_ID }}"
+          echo "Version: ${{ steps.version.outputs.new_version }}"
+          echo "File: ${{ steps.download.outputs.apk_file }}"
+          
           mabl applications upload \
-            --app-id ${{ secrets.MABL_APP_ID }} \
-            --version ${{ steps.version.outputs.new_version }} \
-            --file ${{ steps.download.outputs.apk_file }} \
-            --platform android
+            --app-id "${{ secrets.MABL_APP_ID }}" \
+            --version "${{ steps.version.outputs.new_version }}" \
+            --file "${{ steps.download.outputs.apk_file }}" \
+            --platform android \
+            --verbose
+          
+          echo "Upload completed successfully!"
 
       - name: Commit version bump
         if: github.event_name == 'push'
