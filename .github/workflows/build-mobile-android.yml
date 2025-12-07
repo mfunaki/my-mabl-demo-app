@@ -57,14 +57,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: 'npm'
           cache-dependency-path: apps/mobile/package-lock.json
 
-      - name: Setup Expo
+      - name: Setup Expo and EAS CLI
         uses: expo/expo-github-action@v8
         with:
-          expo-version: latest
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
@@ -73,27 +72,38 @@ jobs:
         run: npm ci
 
       - name: Build Android APK
+        id: build
         working-directory: apps/mobile
         env:
           EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL }}
         run: |
           eas build --platform android \
             --profile ${{ github.event.inputs.profile || 'preview-apk' }} \
-            --non-interactive
+            --non-interactive \
+            --json > build-output.json
+          
+          BUILD_ID=$(jq -r '.id' build-output.json)
+          echo "Build ID: $BUILD_ID"
+          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
 
       - name: Wait for build completion
+        id: wait
         working-directory: apps/mobile
         run: |
-          echo "Waiting for build to complete..."
-          BUILD_ID=$(eas build:list --platform android --limit 1 --json | jq -r '.[0].id')
-          echo "Build ID: $BUILD_ID"
+          BUILD_ID="${{ steps.build.outputs.build_id }}"
+          echo "Waiting for build $BUILD_ID to complete..."
           
-          while true; do
+          MAX_WAIT=3600
+          ELAPSED=0
+          
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
             STATUS=$(eas build:view $BUILD_ID --json | jq -r '.status')
-            echo "Build status: $STATUS"
+            echo "Build status: $STATUS (elapsed: ${ELAPSED}s)"
             
             if [ "$STATUS" = "finished" ]; then
               echo "Build completed successfully!"
+              APK_URL=$(eas build:view $BUILD_ID --json | jq -r '.artifacts.buildUrl')
+              echo "apk_url=$APK_URL" >> $GITHUB_OUTPUT
               break
             elif [ "$STATUS" = "errored" ] || [ "$STATUS" = "canceled" ]; then
               echo "Build failed with status: $STATUS"
@@ -101,25 +111,29 @@ jobs:
             fi
             
             sleep 30
+            ELAPSED=$((ELAPSED + 30))
           done
           
-          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+          if [ $ELAPSED -ge $MAX_WAIT ]; then
+            echo "Build timeout after ${MAX_WAIT}s"
+            exit 1
+          fi
 
       - name: Download APK
         id: download
         working-directory: apps/mobile
         run: |
-          BUILD_ID=$(eas build:list --platform android --limit 1 --json | jq -r '.[0].id')
-          APK_URL=$(eas build:view $BUILD_ID --json | jq -r '.artifacts.buildUrl')
+          APK_URL="${{ steps.wait.outputs.apk_url }}"
+          APK_FILE="expense-mobile-${{ steps.version.outputs.new_version }}.apk"
           
           echo "Downloading APK from: $APK_URL"
-          curl -L -o expense-mobile-${{ steps.version.outputs.new_version }}.apk "$APK_URL"
+          curl -L -o "$APK_FILE" "$APK_URL"
           
-          echo "apk_file=expense-mobile-${{ steps.version.outputs.new_version }}.apk" >> $GITHUB_OUTPUT
+          ls -lh "$APK_FILE"
+          echo "apk_file=$APK_FILE" >> $GITHUB_OUTPUT
 
       - name: Install mabl CLI
-        run: |
-          npm install -g @mablhq/mabl-cli
+        run: npm install -g @mablhq/mabl-cli
 
       - name: Upload APK to mabl
         working-directory: apps/mobile
@@ -138,8 +152,8 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add apps/mobile/package.json apps/mobile/app.config.js
-          git commit -m "chore: bump mobile version to ${{ steps.version.outputs.new_version }} [skip ci]"
-          git push
+          git commit -m "chore: bump mobile version to ${{ steps.version.outputs.new_version }} [skip ci]" || echo "No changes to commit"
+          git push || echo "Nothing to push"
 
       - name: Create Release
         if: github.event_name == 'push'
@@ -156,8 +170,8 @@ jobs:
             - Build Profile: ${{ github.event.inputs.profile || 'preview-apk' }}
             - Uploaded to mabl
             
-            Download APK:
-            https://expo.dev/accounts/${{ secrets.EXPO_USERNAME }}/projects/expense-mobile/builds
+            Build Details:
+            https://expo.dev/accounts/${{ secrets.EXPO_USERNAME }}/projects/expense-mobile/builds/${{ steps.build.outputs.build_id }}
           draft: false
           prerelease: false
 
@@ -168,15 +182,13 @@ jobs:
           path: apps/mobile/${{ steps.download.outputs.apk_file }}
           retention-days: 30
 
-      - name: Comment PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.name,
-              body: `🚀 Android APK v${{ steps.version.outputs.new_version }} build completed and uploaded to mabl!\n\n` +
-                    `Download: https://expo.dev/accounts/${{ secrets.EXPO_USERNAME }}/projects/expense-mobile/builds`
-            })
+      - name: Summary
+        run: |
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ steps.version.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build ID**: ${{ steps.build.outputs.build_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Profile**: ${{ github.event.inputs.profile || 'preview-apk' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **APK File**: ${{ steps.download.outputs.apk_file }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Build URL: https://expo.dev/accounts/${{ secrets.EXPO_USERNAME }}/projects/expense-mobile/builds/${{ steps.build.outputs.build_id }}" >> $GITHUB_STEP_SUMMARY
