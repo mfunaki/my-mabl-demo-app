@@ -18,6 +18,10 @@ on:
           - preview-apk
           - production
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -27,6 +31,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get current version and increment
         id: version
@@ -154,28 +159,35 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add apps/mobile/package.json apps/mobile/app.config.js
-          git commit -m "chore: bump mobile version to ${{ steps.version.outputs.new_version }} [skip ci]" || echo "No changes to commit"
-          git push || echo "Nothing to push"
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: bump mobile version to ${{ steps.version.outputs.new_version }} [skip ci]"
+            git push
+          fi
 
       - name: Create Release
         if: github.event_name == 'push'
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: mobile-v${{ steps.version.outputs.new_version }}
-          release_name: Mobile v${{ steps.version.outputs.new_version }}
+          name: Mobile v${{ steps.version.outputs.new_version }}
           body: |
-            Android APK version ${{ steps.version.outputs.new_version }}
+            ## Android APK version ${{ steps.version.outputs.new_version }}
             
-            - Platform: Android
-            - Build Profile: ${{ github.event.inputs.profile || 'preview-apk' }}
-            - Uploaded to mabl
+            ### Build Information
+            - **Platform**: Android
+            - **Build Profile**: ${{ github.event.inputs.profile || 'preview-apk' }}
+            - **Build ID**: ${{ steps.build.outputs.build_id }}
+            - **Uploaded to mabl**: ✅
             
-            Build Details:
-            https://expo.dev/accounts/${{ secrets.EXPO_USERNAME }}/projects/expense-mobile/builds/${{ steps.build.outputs.build_id }}
+            ### Download
+            [View Build on Expo](https://expo.dev/accounts/${{ secrets.EXPO_USERNAME }}/projects/expense-mobile/builds/${{ steps.build.outputs.build_id }})
           draft: false
           prerelease: false
+          files: apps/mobile/${{ steps.download.outputs.apk_file }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload APK as artifact
         uses: actions/upload-artifact@v4
