@@ -169,6 +169,7 @@ jobs:
           
           echo ""
           echo "=== Upload Configuration ==="
+          echo "Workspace ID: ${{ secrets.MABL_WORKSPACE_ID }}"
           echo "Version: ${{ steps.version.outputs.new_version }}"
           echo "File: ${{ steps.download.outputs.app_file }}"
           echo "Platform: iOS"
@@ -179,6 +180,7 @@ jobs:
           OUTPUT=$(mabl mobile-build-files upload \
             ${{ steps.download.outputs.app_file }} \
             --version ${{ steps.version.outputs.new_version }} \
+            --workspace-id ${{ secrets.MABL_WORKSPACE_ID }} \
             2>&1 | tee mabl-upload.log)
           
           UPLOAD_STATUS=${PIPESTATUS[0]}
