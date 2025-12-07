@@ -1,0 +1,182 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/mobile/**'
+      - '.github/workflows/build-mobile-android.yml'
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'EAS Build Profile'
+        required: true
+        default: 'preview-apk'
+        type: choice
+        options:
+          - preview-apk
+          - production
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get current version and increment
+        id: version
+        run: |
+          cd apps/mobile
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "Current version: $CURRENT_VERSION"
+          
+          # バージョンをインクリメント (例: 1.0.0 -> 1.0.1)
+          IFS='.' read -ra VER <<< "$CURRENT_VERSION"
+          PATCH=$((${VER[2]} + 1))
+          NEW_VERSION="${VER[0]}.${VER[1]}.$PATCH"
+          echo "New version: $NEW_VERSION"
+          
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Update version in package.json
+        run: |
+          cd apps/mobile
+          npm version ${{ steps.version.outputs.new_version }} --no-git-tag-version
+
+      - name: Update version in app.config.js
+        run: |
+          cd apps/mobile
+          sed -i "s/version: '[^']*'/version: '${{ steps.version.outputs.new_version }}'/" app.config.js
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: apps/mobile/package-lock.json
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        working-directory: apps/mobile
+        run: npm ci
+
+      - name: Build Android APK
+        working-directory: apps/mobile
+        env:
+          EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL }}
+        run: |
+          eas build --platform android \
+            --profile ${{ github.event.inputs.profile || 'preview-apk' }} \
+            --non-interactive
+
+      - name: Wait for build completion
+        working-directory: apps/mobile
+        run: |
+          echo "Waiting for build to complete..."
+          BUILD_ID=$(eas build:list --platform android --limit 1 --json | jq -r '.[0].id')
+          echo "Build ID: $BUILD_ID"
+          
+          while true; do
+            STATUS=$(eas build:view $BUILD_ID --json | jq -r '.status')
+            echo "Build status: $STATUS"
+            
+            if [ "$STATUS" = "finished" ]; then
+              echo "Build completed successfully!"
+              break
+            elif [ "$STATUS" = "errored" ] || [ "$STATUS" = "canceled" ]; then
+              echo "Build failed with status: $STATUS"
+              exit 1
+            fi
+            
+            sleep 30
+          done
+          
+          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+
+      - name: Download APK
+        id: download
+        working-directory: apps/mobile
+        run: |
+          BUILD_ID=$(eas build:list --platform android --limit 1 --json | jq -r '.[0].id')
+          APK_URL=$(eas build:view $BUILD_ID --json | jq -r '.artifacts.buildUrl')
+          
+          echo "Downloading APK from: $APK_URL"
+          curl -L -o expense-mobile-${{ steps.version.outputs.new_version }}.apk "$APK_URL"
+          
+          echo "apk_file=expense-mobile-${{ steps.version.outputs.new_version }}.apk" >> $GITHUB_OUTPUT
+
+      - name: Install mabl CLI
+        run: |
+          npm install -g @mablhq/mabl-cli
+
+      - name: Upload APK to mabl
+        working-directory: apps/mobile
+        env:
+          MABL_API_KEY: ${{ secrets.MABL_API_KEY }}
+        run: |
+          mabl applications upload \
+            --app-id ${{ secrets.MABL_APP_ID }} \
+            --version ${{ steps.version.outputs.new_version }} \
+            --file ${{ steps.download.outputs.apk_file }} \
+            --platform android
+
+      - name: Commit version bump
+        if: github.event_name == 'push'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add apps/mobile/package.json apps/mobile/app.config.js
+          git commit -m "chore: bump mobile version to ${{ steps.version.outputs.new_version }} [skip ci]"
+          git push
+
+      - name: Create Release
+        if: github.event_name == 'push'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: mobile-v${{ steps.version.outputs.new_version }}
+          release_name: Mobile v${{ steps.version.outputs.new_version }}
+          body: |
+            Android APK version ${{ steps.version.outputs.new_version }}
+            
+            - Platform: Android
+            - Build Profile: ${{ github.event.inputs.profile || 'preview-apk' }}
+            - Uploaded to mabl
+            
+            Download APK:
+            https://expo.dev/accounts/${{ secrets.EXPO_USERNAME }}/projects/expense-mobile/builds
+          draft: false
+          prerelease: false
+
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: expense-mobile-${{ steps.version.outputs.new_version }}.apk
+          path: apps/mobile/${{ steps.download.outputs.apk_file }}
+          retention-days: 30
+
+      - name: Comment PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              body: `🚀 Android APK v${{ steps.version.outputs.new_version }} build completed and uploaded to mabl!\n\n` +
+                    `Download: https://expo.dev/accounts/${{ secrets.EXPO_USERNAME }}/projects/expense-mobile/builds`
+            })

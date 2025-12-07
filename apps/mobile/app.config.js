@@ -6,24 +6,29 @@ module.exports = {
     orientation: 'portrait',
     ios: {
       supportsTablet: true,
-      bundleIdentifier: 'com.expense.mobile',
+      bundleIdentifier: 'jp.mayoct.expense.mobile',
     },
     android: {
-      package: 'com.expense.mobile',
-      usesCleartextTraffic: true,
+      package: 'jp.mayoct.expense.mobile',
+      // HTTPSの場合はusesCleartextTrafficは不要
+      // 本番環境ではfalseにする
+      usesCleartextTraffic: false,
     },
     plugins: [
       [
         'expo-build-properties',
         {
           android: {
-            usesCleartextTraffic: true,
+            usesCleartextTraffic: false,
           },
         },
       ],
     ],
     extra: {
       apiUrl: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000',
+      "eas": {
+        "projectId": "9799947d-7655-4c9a-b7c2-7f500f1a0ff4"
+      }
     },
   },
 };

@@ -8,7 +8,9 @@ import {
   StyleSheet,
   Alert,
   RefreshControl,
+  Platform,
 } from 'react-native';
+import Constants from 'expo-constants';
 import { expenseApi } from '../services/api';
 import { logout, getUsername } from '../services/auth';
 import { Expense, ExpenseFormData } from '../types/expense';
@@ -20,17 +22,42 @@ export default function HomeScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [username, setUsernameState] = useState('');
+  const [debugInfo, setDebugInfo] = useState('');
 
   const loadExpenses = async () => {
     try {
+      // デバッグ情報を表示
+      console.log('=== Debug Info ===');
+      console.log('Platform:', Platform.OS);
+      console.log('API URL:', Constants.expoConfig?.extra?.apiUrl);
+      console.log('Username:', username);
+      
       const user = await getUsername();
       if (user) {
         setUsernameState(user);
+        console.log('Fetching expenses for user:', user);
         const data = await expenseApi.getAll(user);
+        console.log('Expenses fetched successfully:', data.length, 'items');
         setExpenses(data);
       }
-    } catch (error) {
-      Alert.alert('エラー', '経費データの取得に失敗しました');
+    } catch (error: any) {
+      console.error('=== Error Details ===');
+      console.error('Error type:', error.constructor.name);
+      console.error('Error message:', error.message);
+      console.error('Error code:', error.code);
+      console.error('Error response:', error.response?.data);
+      console.error('Full error:', JSON.stringify(error, null, 2));
+      
+      let errorMessage = '経費データの取得に失敗しました';
+      if (error.code === 'ECONNABORTED') {
+        errorMessage += '\nタイムアウトしました';
+      } else if (error.code === 'ERR_NETWORK') {
+        errorMessage += '\nネットワークエラー';
+      } else if (error.message) {
+        errorMessage += `\n${error.message}`;
+      }
+      
+      Alert.alert('エラー', errorMessage);
     }
   };
 
@@ -119,6 +146,32 @@ export default function HomeScreen({ navigation }: any) {
     </View>
   );
 
+  const testApiConnection = async () => {
+    try {
+      setDebugInfo('Testing API connection...');
+      const apiUrl = Constants.expoConfig?.extra?.apiUrl || 'Unknown';
+      setDebugInfo(`API URL: ${apiUrl}\nPlatform: ${Platform.OS}\n\nTesting...`);
+      
+      const response = await fetch(`${apiUrl}/api/expenses`, {
+        method: 'GET',
+        headers: {
+          'Authorization': 'employee',
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const status = response.status;
+      const data = await response.json();
+      
+      setDebugInfo(`API URL: ${apiUrl}\nPlatform: ${Platform.OS}\n\nStatus: ${status}\nResponse: ${JSON.stringify(data, null, 2)}`);
+      Alert.alert('Success', `API connection successful!\nStatus: ${status}`);
+    } catch (error: any) {
+      const errorMsg = `API URL: ${Constants.expoConfig?.extra?.apiUrl}\nPlatform: ${Platform.OS}\n\nError: ${error.message}\nCode: ${error.code}`;
+      setDebugInfo(errorMsg);
+      Alert.alert('Connection Failed', error.message);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -188,6 +241,21 @@ export default function HomeScreen({ navigation }: any) {
           }
         />
       </View>
+
+      {/* デバッグ情報表示エリア */}
+      {__DEV__ && (
+        <View style={styles.debugContainer}>
+          <TouchableOpacity
+            style={styles.debugButton}
+            onPress={testApiConnection}
+          >
+            <Text style={styles.debugButtonText}>Test API Connection</Text>
+          </TouchableOpacity>
+          {debugInfo ? (
+            <Text style={styles.debugText}>{debugInfo}</Text>
+          ) : null}
+        </View>
+      )}
     </View>
   );
 }
@@ -308,5 +376,26 @@ const styles = StyleSheet.create({
     color: '#999',
     marginTop: 32,
     fontSize: 16,
+  },
+  debugContainer: {
+    backgroundColor: '#f0f0f0',
+    padding: 10,
+    margin: 10,
+    borderRadius: 5,
+  },
+  debugButton: {
+    backgroundColor: '#FF9500',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  debugButtonText: {
+    color: 'white',
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  debugText: {
+    fontSize: 10,
+    fontFamily: 'monospace',
   },
 });
