@@ -12,12 +12,10 @@ on:
       profile:
         description: 'EAS Build Profile'
         required: true
-        default: 'preview-ios'
+        default: 'simulator'
         type: choice
         options:
-          - preview-ios
           - simulator
-          - production
 
 permissions:
   contents: write
@@ -42,8 +40,8 @@ jobs:
           echo "Current version: $CURRENT_VERSION"
           
           IFS='.' read -ra VER <<< "$CURRENT_VERSION"
-          PATCH=$((${VER[2]} + 1))
-          NEW_VERSION="${VER[0]}.${VER[1]}.$PATCH"
+          MINOR=$((${VER[1]} + 1))
+          NEW_VERSION="${VER[0]}.$MINOR"
           echo "New version: $NEW_VERSION"
           
           echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
@@ -76,14 +74,14 @@ jobs:
         working-directory: apps/mobile
         run: npm ci
 
-      - name: Build iOS App
+      - name: Build iOS Simulator App
         id: build
         working-directory: apps/mobile
         env:
           EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL }}
         run: |
           eas build --platform ios \
-            --profile ${{ github.event.inputs.profile || 'preview-ios' }} \
+            --profile simulator \
             --non-interactive \
             --json > build-output.json
           
@@ -108,8 +106,8 @@ jobs:
             
             if [ "$STATUS" = "FINISHED" ] || [ "$STATUS" = "finished" ]; then
               echo "Build completed successfully!"
-              IPA_URL=$(eas build:view $BUILD_ID --json | jq -r '.artifacts.buildUrl')
-              echo "ipa_url=$IPA_URL" >> $GITHUB_OUTPUT
+              APP_URL=$(eas build:view $BUILD_ID --json | jq -r '.artifacts.buildUrl')
+              echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
               break
             elif [ "$STATUS" = "ERRORED" ] || [ "$STATUS" = "errored" ] || [ "$STATUS" = "CANCELED" ] || [ "$STATUS" = "canceled" ]; then
               echo "Build failed with status: $STATUS"
@@ -125,48 +123,62 @@ jobs:
             exit 1
           fi
 
-      - name: Download IPA
+      - name: Download and extract APP file
         id: download
         working-directory: apps/mobile
         run: |
-          IPA_URL="${{ steps.wait.outputs.ipa_url }}"
-          IPA_FILE="expense-mobile-${{ steps.version.outputs.new_version }}.ipa"
+          APP_URL="${{ steps.wait.outputs.app_url }}"
+          APP_ARCHIVE="expense-mobile-${{ steps.version.outputs.new_version }}.app.tar.gz"
           
-          echo "Downloading IPA from: $IPA_URL"
-          curl -L -o "$IPA_FILE" "$IPA_URL"
+          echo "Downloading APP archive from: $APP_URL"
+          curl -L -o "$APP_ARCHIVE" "$APP_URL"
           
-          ls -lh "$IPA_FILE"
-          echo "ipa_file=$IPA_FILE" >> $GITHUB_OUTPUT
+          echo "Extracting .app file..."
+          tar -xzf "$APP_ARCHIVE"
+          
+          APP_PATH=$(find . -name "*.app" -type d | head -1)
+          
+          if [ -z "$APP_PATH" ]; then
+            echo "Error: .app file not found after extraction"
+            ls -la
+            exit 1
+          fi
+          
+          echo "Found APP file: $APP_PATH"
+          
+          APP_ZIP="expense-mobile-${{ steps.version.outputs.new_version }}.app.zip"
+          zip -r "$APP_ZIP" "$APP_PATH"
+          
+          ls -lh "$APP_ZIP"
+          echo "app_file=$APP_ZIP" >> $GITHUB_OUTPUT
 
       - name: Install mabl CLI
         run: |
           npm install -g @mablhq/mabl-cli
           mabl --version
 
-      - name: Upload IPA to mabl
+      - name: Upload APP to mabl
+        id: mabl_upload
         working-directory: apps/mobile
         env:
           MABL_API_KEY: ${{ secrets.MABL_API_KEY }}
         run: |
-          echo "=== Checking IPA file ==="
-          ls -lh ${{ steps.download.outputs.ipa_file }}
+          echo "=== Checking APP file ==="
+          ls -lh ${{ steps.download.outputs.app_file }}
           
           echo ""
           echo "=== Upload Configuration ==="
-          echo "App ID (iOS): ${{ secrets.MABL_APP_ID_IOS }}"
           echo "Version: ${{ steps.version.outputs.new_version }}"
-          echo "File: ${{ steps.download.outputs.ipa_file }}"
-          echo "Platform: ios"
+          echo "File: ${{ steps.download.outputs.app_file }}"
+          echo "Platform: iOS"
           
           echo ""
           echo "=== Starting Upload ==="
           set -x
-          mabl applications upload \
-            --app-id "${{ secrets.MABL_APP_ID_IOS }}" \
-            --version "${{ steps.version.outputs.new_version }}" \
-            --file "${{ steps.download.outputs.ipa_file }}" \
-            --platform ios \
-            --verbose 2>&1 | tee mabl-upload.log
+          OUTPUT=$(mabl mobile-build-files upload \
+            ${{ steps.download.outputs.app_file }} \
+            --version ${{ steps.version.outputs.new_version }} \
+            2>&1 | tee mabl-upload.log)
           
           UPLOAD_STATUS=${PIPESTATUS[0]}
           set +x
@@ -175,6 +187,16 @@ jobs:
           echo "=== Upload Result ==="
           if [ $UPLOAD_STATUS -eq 0 ]; then
             echo "✅ Upload completed successfully!"
+            
+            BUILD_FILE_ID=$(echo "$OUTPUT" | grep -oE '[a-zA-Z0-9_-]+-maf' | tail -1)
+            
+            if [ -n "$BUILD_FILE_ID" ]; then
+              echo "Build File ID: $BUILD_FILE_ID"
+              echo "BUILD_FILE_ID=$BUILD_FILE_ID" >> $GITHUB_OUTPUT
+              echo "BUILD_FILE_ID=$BUILD_FILE_ID" >> $GITHUB_ENV
+            else
+              echo "Warning: Could not extract Build File ID from output"
+            fi
           else
             echo "❌ Upload failed with exit code: $UPLOAD_STATUS"
             cat mabl-upload.log
@@ -191,34 +213,36 @@ jobs:
             ## iOS App version ${{ steps.version.outputs.new_version }}
             
             ### Build Information
-            - **Platform**: iOS
-            - **Build Profile**: ${{ github.event.inputs.profile || 'preview-ios' }}
+            - **Platform**: iOS (Simulator)
+            - **Build Profile**: simulator
             - **Build ID**: ${{ steps.build.outputs.build_id }}
             - **Uploaded to mabl**: ✅
+            - **mabl Build File ID**: ${{ steps.mabl_upload.outputs.BUILD_FILE_ID }}
             
             ### Download
             [View Build on Expo](https://expo.dev/accounts/${{ secrets.EXPO_USERNAME }}/projects/expense-mobile/builds/${{ steps.build.outputs.build_id }})
           draft: false
           prerelease: false
-          files: apps/mobile/${{ steps.download.outputs.ipa_file }}
+          files: apps/mobile/${{ steps.download.outputs.app_file }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload IPA as artifact
+      - name: Upload APP as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: expense-mobile-ios-${{ steps.version.outputs.new_version }}.ipa
-          path: apps/mobile/${{ steps.download.outputs.ipa_file }}
+          name: expense-mobile-ios-${{ steps.version.outputs.new_version }}.app.zip
+          path: apps/mobile/${{ steps.download.outputs.app_file }}
           retention-days: 30
 
       - name: Summary
         run: |
           echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Platform**: iOS" >> $GITHUB_STEP_SUMMARY
+          echo "- **Platform**: iOS (Simulator)" >> $GITHUB_STEP_SUMMARY
           echo "- **Version**: ${{ steps.version.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Build ID**: ${{ steps.build.outputs.build_id }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Profile**: ${{ github.event.inputs.profile || 'preview-ios' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **IPA File**: ${{ steps.download.outputs.ipa_file }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Profile**: simulator" >> $GITHUB_STEP_SUMMARY
+          echo "- **APP File**: ${{ steps.download.outputs.app_file }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **mabl Build File ID**: ${{ steps.mabl_upload.outputs.BUILD_FILE_ID }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Build URL: https://expo.dev/accounts/${{ secrets.EXPO_USERNAME }}/projects/expense-mobile/builds/${{ steps.build.outputs.build_id }}" >> $GITHUB_STEP_SUMMARY

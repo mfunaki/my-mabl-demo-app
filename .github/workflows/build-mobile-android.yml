@@ -40,10 +40,10 @@ jobs:
           CURRENT_VERSION=$(node -p "require('./package.json').version")
           echo "Current version: $CURRENT_VERSION"
           
-          # バージョンをインクリメント (例: 1.0.0 -> 1.0.1)
+          # バージョンをインクリメント (例: 1.1 -> 1.2)
           IFS='.' read -ra VER <<< "$CURRENT_VERSION"
-          PATCH=$((${VER[2]} + 1))
-          NEW_VERSION="${VER[0]}.${VER[1]}.$PATCH"
+          MINOR=$((${VER[1]} + 1))
+          NEW_VERSION="${VER[0]}.$MINOR"
           echo "New version: $NEW_VERSION"
           
           echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
@@ -145,6 +145,7 @@ jobs:
           mabl --version
 
       - name: Upload APK to mabl
+        id: mabl_upload
         working-directory: apps/mobile
         env:
           MABL_API_KEY: ${{ secrets.MABL_API_KEY }}
@@ -154,20 +155,17 @@ jobs:
           
           echo ""
           echo "=== Upload Configuration ==="
-          echo "App ID: ${{ secrets.MABL_APP_ID }}"
           echo "Version: ${{ steps.version.outputs.new_version }}"
           echo "File: ${{ steps.download.outputs.apk_file }}"
-          echo "Platform: android"
+          echo "Platform: Android"
           
           echo ""
           echo "=== Starting Upload ==="
           set -x
-          mabl applications upload \
-            --app-id "${{ secrets.MABL_APP_ID }}" \
-            --version "${{ steps.version.outputs.new_version }}" \
-            --file "${{ steps.download.outputs.apk_file }}" \
-            --platform android \
-            --verbose 2>&1 | tee mabl-upload.log
+          OUTPUT=$(mabl mobile-build-files upload \
+            ${{ steps.download.outputs.apk_file }} \
+            --version ${{ steps.version.outputs.new_version }} \
+            2>&1 | tee mabl-upload.log)
           
           UPLOAD_STATUS=${PIPESTATUS[0]}
           set +x
@@ -176,6 +174,17 @@ jobs:
           echo "=== Upload Result ==="
           if [ $UPLOAD_STATUS -eq 0 ]; then
             echo "✅ Upload completed successfully!"
+            
+            # ビルドファイルIDを抽出 (-mafで終わるID)
+            BUILD_FILE_ID=$(echo "$OUTPUT" | grep -oE '[a-zA-Z0-9_-]+-maf' | tail -1)
+            
+            if [ -n "$BUILD_FILE_ID" ]; then
+              echo "Build File ID: $BUILD_FILE_ID"
+              echo "BUILD_FILE_ID=$BUILD_FILE_ID" >> $GITHUB_OUTPUT
+              echo "BUILD_FILE_ID=$BUILD_FILE_ID" >> $GITHUB_ENV
+            else
+              echo "Warning: Could not extract Build File ID from output"
+            fi
           else
             echo "❌ Upload failed with exit code: $UPLOAD_STATUS"
             cat mabl-upload.log
@@ -226,5 +235,6 @@ jobs:
           echo "- **Build ID**: ${{ steps.build.outputs.build_id }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Profile**: ${{ github.event.inputs.profile || 'preview-apk' }}" >> $GITHUB_STEP_SUMMARY
           echo "- **APK File**: ${{ steps.download.outputs.apk_file }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **mabl Build File ID**: ${{ steps.mabl_upload.outputs.BUILD_FILE_ID }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Build URL: https://expo.dev/accounts/${{ secrets.EXPO_USERNAME }}/projects/expense-mobile/builds/${{ steps.build.outputs.build_id }}" >> $GITHUB_STEP_SUMMARY

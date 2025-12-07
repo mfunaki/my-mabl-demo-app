@@ -2,7 +2,7 @@ module.exports = {
   expo: {
     name: 'Expense Mobile',
     slug: 'expense-mobile',
-    version: '1.0.2',
+    version: '1.0',
     orientation: 'portrait',
     ios: {
       supportsTablet: true,
