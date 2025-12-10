@@ -30,5 +30,8 @@ module.exports = {
         "projectId": "9799947d-7655-4c9a-b7c2-7f500f1a0ff4"
       }
     },
+    cli: {
+      appVersionSource: 'remote'
+    }
   },
 };

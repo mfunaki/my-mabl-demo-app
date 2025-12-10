@@ -85,11 +85,18 @@ jobs:
           eas build --platform android \
             --profile ${{ github.event.inputs.profile || 'preview-apk' }} \
             --non-interactive \
-            --json > build-output.json
+            --json > build-output.json || true
           
           cat build-output.json
           BUILD_ID=$(jq -r '.[0].id // .id' build-output.json)
           echo "Build ID: $BUILD_ID"
+          
+          if [ -z "$BUILD_ID" ] || [ "$BUILD_ID" = "null" ]; then
+            echo "Failed to extract build ID"
+            cat build-output.json
+            exit 1
+          fi
+          
           echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
 
       - name: Wait for build completion
@@ -103,17 +110,20 @@ jobs:
           ELAPSED=0
           
           while [ $ELAPSED -lt $MAX_WAIT ]; do
-            STATUS=$(eas build:view $BUILD_ID --json | jq -r '.status')
+            BUILD_INFO=$(eas build:view $BUILD_ID --json)
+            STATUS=$(echo "$BUILD_INFO" | jq -r '.status')
             echo "Build status: $STATUS (elapsed: ${ELAPSED}s)"
             
-            # EAS Buildのステータスは大文字 (FINISHED, ERRORED, CANCELED など)
             if [ "$STATUS" = "FINISHED" ] || [ "$STATUS" = "finished" ]; then
               echo "Build completed successfully!"
-              APK_URL=$(eas build:view $BUILD_ID --json | jq -r '.artifacts.buildUrl')
+              APK_URL=$(echo "$BUILD_INFO" | jq -r '.artifacts.buildUrl')
               echo "apk_url=$APK_URL" >> $GITHUB_OUTPUT
               break
             elif [ "$STATUS" = "ERRORED" ] || [ "$STATUS" = "errored" ] || [ "$STATUS" = "CANCELED" ] || [ "$STATUS" = "canceled" ]; then
               echo "Build failed with status: $STATUS"
+              echo ""
+              echo "=== Build Logs ==="
+              eas build:view $BUILD_ID
               exit 1
             fi
             
