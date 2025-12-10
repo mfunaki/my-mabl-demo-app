@@ -5,8 +5,7 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal",
-      "npmInstallCommand": "npm install --legacy-peer-deps"
+      "distribution": "internal"
     },
     "preview": {
       "distribution": "internal",
@@ -15,15 +14,13 @@
       },
       "ios": {
         "simulator": false
-      },
-      "npmInstallCommand": "npm install --legacy-peer-deps"
+      }
     },
     "production": {
       "distribution": "store",
       "android": {
         "buildType": "app-bundle"
-      },
-      "npmInstallCommand": "npm install --legacy-peer-deps"
+      }
     },
     "preview-apk": {
       "extends": "preview",
@@ -33,8 +30,7 @@
       "channel": "preview",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api-preview.example.com"
-      },
-      "npmInstallCommand": "npm install --legacy-peer-deps"
+      }
     },
     "preview-ios": {
       "extends": "preview",
@@ -44,8 +40,7 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "$EXPO_PUBLIC_API_URL"
-      },
-      "npmInstallCommand": "npm install --legacy-peer-deps"
+      }
     },
     "simulator": {
       "extends": "preview",
@@ -54,8 +49,7 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "$EXPO_PUBLIC_API_URL"
-      },
-      "npmInstallCommand": "npm install --legacy-peer-deps"
+      }
     }
   },
   "submit": {
