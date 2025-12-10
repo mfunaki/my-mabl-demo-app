@@ -74,7 +74,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: apps/mobile
-        run: npm ci
+        run: npm install --legacy-peer-deps
 
       - name: Build Android APK
         id: build
