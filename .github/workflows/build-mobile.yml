@@ -55,18 +55,53 @@ jobs:
         run: npm install --legacy-peer-deps
       
       - name: Setup Expo
-        run: npm install -g expo-cli eas-cli
+        run: npm install -g eas-cli
       
-      - name: Build for ${{ matrix.platform }}
+      - name: Prebuild (iOS)
+        if: matrix.platform == 'ios'
+        working-directory: apps/mobile
+        run: npx expo prebuild --platform ios --no-install
+      
+      - name: Prebuild (Android)
+        if: matrix.platform == 'android'
+        working-directory: apps/mobile
+        run: npx expo prebuild --platform android --no-install
+      
+      - name: Build with Gradle (Android)
+        if: matrix.platform == 'android'
+        working-directory: apps/mobile/android
+        run: ./gradlew assembleRelease
+      
+      - name: Build with Xcodebuild (iOS)
+        if: matrix.platform == 'ios'
+        working-directory: apps/mobile/ios
+        run: |
+          xcodebuild -workspace *.xcworkspace \
+            -scheme expense-mobile \
+            -configuration Release \
+            -archivePath build/archive.xcarchive \
+            archive
+      
+      - name: Setup mabl CLI
+        run: npm install -g @mablhq/mabl-cli
+      
+      - name: Upload to mabl (iOS)
+        if: matrix.platform == 'ios'
         working-directory: apps/mobile
         run: |
-          if [ "${{ matrix.platform }}" == "ios" ]; then
-            npx expo run:ios --configuration Release
-          else
-            npx expo run:android --variant release
-          fi
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          mabl applications upload \
+            --app-id ${{ secrets.MABL_APP_ID_IOS }} \
+            --api-key ${{ secrets.MABL_API_KEY }} \
+            --file ios/build/archive.xcarchive/Products/Applications/*.app
+      
+      - name: Upload to mabl (Android)
+        if: matrix.platform == 'android'
+        working-directory: apps/mobile
+        run: |
+          mabl applications upload \
+            --app-id ${{ secrets.MABL_APP_ID_ANDROID }} \
+            --api-key ${{ secrets.MABL_API_KEY }} \
+            --file android/app/build/outputs/apk/release/*.apk
       
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
