@@ -62,6 +62,13 @@ jobs:
         working-directory: apps/mobile
         run: npx expo prebuild --platform ios --no-install
       
+      - name: Install CocoaPods dependencies (iOS)
+        if: matrix.platform == 'ios'
+        working-directory: apps/mobile/ios
+        run: |
+          gem install cocoapods
+          pod install
+      
       - name: Prebuild (Android)
         if: matrix.platform == 'android'
         working-directory: apps/mobile
