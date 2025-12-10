@@ -87,8 +87,13 @@ jobs:
             xcodebuild -project "$PROJECT" \
               -scheme "$SCHEME" \
               -configuration Release \
-              -archivePath build/archive.xcarchive \
-              archive
+              -sdk iphonesimulator \
+              -destination 'platform=iOS Simulator,name=iPhone 15' \
+              -derivedDataPath build \
+              CODE_SIGNING_ALLOWED=NO \
+              CODE_SIGNING_REQUIRED=NO \
+              CODE_SIGN_IDENTITY="" \
+              build
           else
             echo "Available schemes:"
             xcodebuild -workspace "$WORKSPACE" -list
@@ -97,8 +102,13 @@ jobs:
             xcodebuild -workspace "$WORKSPACE" \
               -scheme "$SCHEME" \
               -configuration Release \
-              -archivePath build/archive.xcarchive \
-              archive
+              -sdk iphonesimulator \
+              -destination 'platform=iOS Simulator,name=iPhone 15' \
+              -derivedDataPath build \
+              CODE_SIGNING_ALLOWED=NO \
+              CODE_SIGNING_REQUIRED=NO \
+              CODE_SIGN_IDENTITY="" \
+              build
           fi
       
       - name: Setup mabl CLI
@@ -111,7 +121,7 @@ jobs:
           mabl applications upload \
             --app-id ${{ secrets.MABL_APP_ID_IOS }} \
             --api-key ${{ secrets.MABL_API_KEY }} \
-            --file ios/build/archive.xcarchive/Products/Applications/*.app
+            --file ios/build/Build/Products/Release-iphonesimulator/*.app
       
       - name: Upload to mabl (Android)
         if: matrix.platform == 'android'
