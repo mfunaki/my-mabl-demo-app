@@ -5,7 +5,8 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "npmInstallCommand": "npm install --legacy-peer-deps"
     },
     "preview": {
       "distribution": "internal",
@@ -14,7 +15,8 @@
       },
       "ios": {
         "simulator": false
-      }
+      },
+      "npmInstallCommand": "npm install --legacy-peer-deps"
     },
     "production": {
       "distribution": "store",
@@ -42,24 +44,21 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "$EXPO_PUBLIC_API_URL"
-      }
+      },
+      "npmInstallCommand": "npm install --legacy-peer-deps"
     },
     "simulator": {
       "extends": "preview",
       "ios": {
         "simulator": true
-      }, "EXPO_PUBLIC_API_URL": "$EXPO_PUBLIC_API_URL"
-      "env": { }
-        "EXPO_PUBLIC_API_URL": "$EXPO_PUBLIC_API_URL"},
-      }
-    }.1",
-  },   "npmInstallCommand": "npm install --legacy-peer-deps"
-  "submit": {   }
-    "production": {}  },
-
-
-
-}  }  "submit": {
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "$EXPO_PUBLIC_API_URL"
+      },
+      "npmInstallCommand": "npm install --legacy-peer-deps"
+    }
+  },
+  "submit": {
     "production": {}
   }
 }
