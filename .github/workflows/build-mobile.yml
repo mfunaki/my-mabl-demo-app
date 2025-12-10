@@ -80,14 +80,22 @@ jobs:
           if [ -z "$WORKSPACE" ]; then
             echo "No workspace found, trying xcodeproj"
             PROJECT=$(find . -name "*.xcodeproj" -maxdepth 1 | head -n 1)
+            echo "Available schemes:"
+            xcodebuild -project "$PROJECT" -list
+            SCHEME=$(xcodebuild -project "$PROJECT" -list | grep -A 100 "Schemes:" | grep -v "Schemes:" | head -n 1 | xargs)
+            echo "Using scheme: $SCHEME"
             xcodebuild -project "$PROJECT" \
-              -scheme expense-mobile \
+              -scheme "$SCHEME" \
               -configuration Release \
               -archivePath build/archive.xcarchive \
               archive
           else
+            echo "Available schemes:"
+            xcodebuild -workspace "$WORKSPACE" -list
+            SCHEME=$(xcodebuild -workspace "$WORKSPACE" -list | grep -A 100 "Schemes:" | grep -v "Schemes:" | head -n 1 | xargs)
+            echo "Using scheme: $SCHEME"
             xcodebuild -workspace "$WORKSPACE" \
-              -scheme expense-mobile \
+              -scheme "$SCHEME" \
               -configuration Release \
               -archivePath build/archive.xcarchive \
               archive
