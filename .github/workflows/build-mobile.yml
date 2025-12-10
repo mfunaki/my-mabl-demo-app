@@ -76,11 +76,22 @@ jobs:
         if: matrix.platform == 'ios'
         working-directory: apps/mobile/ios
         run: |
-          xcodebuild -workspace *.xcworkspace \
-            -scheme expense-mobile \
-            -configuration Release \
-            -archivePath build/archive.xcarchive \
-            archive
+          WORKSPACE=$(find . -name "*.xcworkspace" -maxdepth 1 | head -n 1)
+          if [ -z "$WORKSPACE" ]; then
+            echo "No workspace found, trying xcodeproj"
+            PROJECT=$(find . -name "*.xcodeproj" -maxdepth 1 | head -n 1)
+            xcodebuild -project "$PROJECT" \
+              -scheme expense-mobile \
+              -configuration Release \
+              -archivePath build/archive.xcarchive \
+              archive
+          else
+            xcodebuild -workspace "$WORKSPACE" \
+              -scheme expense-mobile \
+              -configuration Release \
+              -archivePath build/archive.xcarchive \
+              archive
+          fi
       
       - name: Setup mabl CLI
         run: npm install -g @mablhq/mabl-cli
