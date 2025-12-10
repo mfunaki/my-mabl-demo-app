@@ -20,16 +20,19 @@
       "distribution": "store",
       "android": {
         "buildType": "app-bundle"
-      }
+      },
+      "npmInstallCommand": "npm install --legacy-peer-deps"
     },
     "preview-apk": {
       "extends": "preview",
       "android": {
         "buildType": "apk"
       },
+      "channel": "preview",
       "env": {
-        "EXPO_PUBLIC_API_URL": "$EXPO_PUBLIC_API_URL"
-      }
+        "EXPO_PUBLIC_API_URL": "https://api-preview.example.com"
+      },
+      "npmInstallCommand": "npm install --legacy-peer-deps"
     },
     "preview-ios": {
       "extends": "preview",
@@ -45,13 +48,18 @@
       "extends": "preview",
       "ios": {
         "simulator": true
-      },
-      "env": {
-        "EXPO_PUBLIC_API_URL": "$EXPO_PUBLIC_API_URL"
+      }, "EXPO_PUBLIC_API_URL": "$EXPO_PUBLIC_API_URL"
+      "env": { }
+        "EXPO_PUBLIC_API_URL": "$EXPO_PUBLIC_API_URL"},
       }
-    }
-  },
-  "submit": {
+    }.1",
+  },   "npmInstallCommand": "npm install --legacy-peer-deps"
+  "submit": {   }
+    "production": {}  },
+
+
+
+}  }  "submit": {
     "production": {}
   }
 }
