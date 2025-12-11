@@ -15,8 +15,8 @@ env:
   SERVICE_NAME: expense-mobile-web
 
 permissions:
-  contents: read
-  id-token: write
+  contents: write  # リリース作成に必要
+  id-token: write  # Google Cloud認証に必要
 
 jobs:
   build-and-deploy:
@@ -196,7 +196,7 @@ jobs:
           echo "service_url=$SERVICE_URL" >> $GITHUB_ENV
 
       - name: Create Release
-        if: github.event_name == 'push'
+        if: false  # リリース作成を無効化
         uses: softprops/action-gh-release@v1
         with:
           tag_name: mobile-web-v${{ steps.version.outputs.new_version }}
