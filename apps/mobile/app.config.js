@@ -1,15 +1,11 @@
 export default {
   name: 'expense-mobile',
   slug: 'expense-mobile',
+  owner: 'mayoct',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'light',
-  splash: {
-    image: './assets/splash.png',
-    resizeMode: 'contain',
-    backgroundColor: '#ffffff'
-  },
   assetBundlePatterns: ['**/*'],
   ios: {
     supportsTablet: true,
@@ -38,8 +34,5 @@ export default {
     eas: {
       projectId: '9799947d-7655-4c9a-b7c2-7f500f1a0ff4'
     }
-  },
-  cli: {
-    appVersionSource: 'remote'
   }
 };

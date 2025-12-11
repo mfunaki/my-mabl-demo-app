@@ -99,10 +99,19 @@ jobs:
         env:
           EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL }}
         run: |
-          eas build --platform android \
+          # 最初に非対話モードで試行
+          if eas build --platform android \
             --profile ${{ github.event.inputs.profile || 'preview-apk' }} \
             --non-interactive \
-            --json > build-output.json || true
+            --json > build-output.json 2>&1; then
+            echo "Build started successfully"
+          else
+            # Keystore生成が必要な場合は失敗する
+            echo "Build failed - Keystore may need to be generated"
+            echo "Please run 'eas build --platform android --profile preview-apk' locally first"
+            cat build-output.json
+            exit 1
+          fi
           
           cat build-output.json
           BUILD_ID=$(jq -r '.[0].id // .id' build-output.json)
