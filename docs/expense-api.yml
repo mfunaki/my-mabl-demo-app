@@ -1,0 +1,332 @@
+openapi: 3.0.3
+info:
+  title: Expense Management API
+  description: |
+    経費精算アプリケーションのREST API仕様書
+    
+    このAPIは以下の機能を提供します：
+    - 経費申請の作成・取得・更新
+    - 承認者による経費申請のステータス変更（承認・却下）
+    - データリセット機能（テスト用）
+    - データベーススキーマの初期化
+    
+    認証は Authorization ヘッダーでユーザー名を渡すシンプルな方式を採用しています。
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: http://localhost:8080
+    description: ローカル開発環境
+  - url: https://expense-app-api-{hash}-an.a.run.app
+    description: Google Cloud Run (本番環境)
+    variables:
+      hash:
+        default: xxxxxxxxxx
+        description: Cloud Runが自動生成するハッシュ値
+
+tags:
+  - name: Expenses
+    description: 経費申請の管理
+  - name: Admin
+    description: 管理・テスト用機能
+
+paths:
+  /api/expenses:
+    get:
+      tags:
+        - Expenses
+      summary: 経費申請一覧取得
+      description: |
+        ログインユーザーに関連する経費申請の一覧を取得します
+        - employee: 自分が申請した経費のみ（applicant_id で絞り込み）
+        - manager: 全ての経費申請を取得
+      operationId: listExpenses
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          description: ユーザー名（employee または manager）
+          schema:
+            type: string
+            example: employee
+      responses:
+        '200':
+          description: 取得成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Expense'
+        '401':
+          description: 未認証（Authorizationヘッダーがない）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags:
+        - Expenses
+      summary: 経費申請作成
+      description: |
+        新しい経費申請を作成します
+        - manager ユーザーは作成できません（403エラー）
+        - title と amount は必須です
+      operationId: createExpense
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          description: ユーザー名（employee のみ可能）
+          schema:
+            type: string
+            example: employee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - amount
+              properties:
+                title:
+                  type: string
+                  example: Conference
+                  description: 経費のタイトル
+                amount:
+                  type: integer
+                  example: 1000
+                  description: 金額
+      responses:
+        '201':
+          description: 作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+        '400':
+          description: バリデーションエラー（必須フィールドがない）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 権限不足（manager は作成できない）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 未認証（Authorizationヘッダーがない）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/expenses/{id}/status:
+    patch:
+      tags:
+        - Expenses
+      summary: 経費申請のステータス更新
+      description: |
+        経費申請のステータスを更新します（承認・却下）
+        - manager ユーザーのみ実行可能
+        - status は APPROVED または REJECTED のみ
+      operationId: updateExpenseStatus
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          description: ユーザー名（manager のみ可能）
+          schema:
+            type: string
+            example: manager
+        - name: id
+          in: path
+          required: true
+          description: 経費申請ID
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [APPROVED, REJECTED]
+                  example: APPROVED
+                  description: 更新後のステータス
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+        '400':
+          description: バリデーションエラー（無効なステータス）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 権限不足（manager 以外は実行不可）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 経費が見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 未認証（Authorizationヘッダーがない）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/reset:
+    post:
+      tags:
+        - Admin
+      summary: データリセット
+      description: |
+        テスト用にデータベースをリセットします
+        - 全ての経費申請を削除
+        - ID シーケンスを1にリセット
+      operationId: resetData
+      responses:
+        '200':
+          description: リセット成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: All expenses deleted
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/migrate:
+    post:
+      tags:
+        - Admin
+      summary: データベーススキーマ初期化
+      description: |
+        データベースに expenses テーブルを作成します
+        - テーブルが既に存在する場合は何もしません（CREATE TABLE IF NOT EXISTS）
+        - サーバー起動時に自動実行されるため、通常は手動で実行不要
+      operationId: migrateDatabase
+      responses:
+        '200':
+          description: マイグレーション成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Migration completed successfully
+        '500':
+          description: マイグレーション失敗
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Migration failed
+                  details:
+                    type: string
+                    example: "relation \"expenses\" already exists"
+
+components:
+  schemas:
+    Expense:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+          description: 経費申請ID（自動採番）
+        title:
+          type: string
+          example: Conference
+          description: 経費のタイトル
+        amount:
+          type: integer
+          example: 1000
+          description: 金額
+        status:
+          type: string
+          enum: [PENDING, APPROVED, REJECTED]
+          example: PENDING
+          description: 承認ステータス（デフォルト: PENDING）
+        applicantId:
+          type: string
+          example: employee
+          description: 申請者のユーザー名
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-01-15T10:00:00Z"
+          description: 作成日時（自動設定）
+      required:
+        - id
+        - title
+        - amount
+        - status
+        - applicantId
+        - createdAt
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Validation error
+          description: エラーメッセージ
+        details:
+          type: string
+          example: Missing required fields
+          description: エラーの詳細情報（オプション）
