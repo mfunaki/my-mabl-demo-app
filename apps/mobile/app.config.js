@@ -9,14 +9,14 @@ export default {
   assetBundlePatterns: ['**/*'],
   ios: {
     supportsTablet: true,
-    bundleIdentifier: 'com.example.expensemobile'
+    bundleIdentifier: 'jp.mayoct.mabl.expensemobile'
   },
   android: {
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#ffffff'
     },
-    package: 'com.example.expensemobile'
+    package: 'jp.mayoct.mabl.expensemobile'
   },
   web: {
     favicon: './assets/favicon.png',
