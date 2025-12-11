@@ -59,6 +59,18 @@ Web版はReact Native Webを使用してモバイルアプリをブラウザで�
 
 ## 本番ビルド
 
+### EAS Update（OTAアップデート）
+
+アプリストアを経由せずにアップデートを配信できます：
+
+```bash
+# プレビュー環境に配信
+eas update --channel preview --message "Bug fixes"
+
+# 本番環境に配信
+eas update --channel production --message "New features"
+```
+
 ### iOSビルド
 
 ```bash
@@ -96,10 +108,10 @@ GitHub Actionsでビルドとデプロイを行うために、以下のシーク
 #### Expo関連
 - `EXPO_TOKEN`: Expoアクセストークン
   - 取得方法: https://expo.dev/accounts/[username]/settings/access-tokens
-- `EXPO_PROJECT_ID`: ExpoプロジェクトID
-  - 確認方法: https://expo.dev のプロジェクトページのURL
 - `EXPO_USERNAME`: Expoユーザー名
 - `EXPO_PUBLIC_API_URL`: APIのエンドポイントURL
+
+**注**: `EXPO_PROJECT_ID`は不要です（`app.config.js`に記載済み）
 
 #### mabl関連
 - `MABL_API_KEY`: mabl APIキー
@@ -136,10 +148,30 @@ GitHub Actionsでビルドとデプロイを行うために、以下のシーク
 ├── App.tsx           # メインアプリコンポーネント
 ├── index.ts          # エントリーポイント
 ├── app.config.js     # Expo設定ファイル（動的）
+│                     # - EASプロジェクトID
+│                     # - EAS Update URL
+│                     # - ランタイムバージョン設定
 ├── eas.json          # EASビルド設定
 ├── .npmrc            # npm設定（legacy-peer-deps）
 └── package.json      # 依存関係とスクリプト
 ```
+
+## 重要な設定
+
+### app.config.js
+
+このファイルには以下の重要な設定が含まれています：
+
+- **EASプロジェクトID**: `extra.eas.projectId`
+- **EAS Update URL**: `updates.url`
+- **ランタイムバージョン**: `runtimeVersion.policy = 'appVersion'`
+- **アプリバージョン管理**: `cli.appVersionSource = 'remote'`
+
+### 依存パッケージ
+
+- `expo-updates`: OTAアップデート機能
+- `react-native-web`: Web版のレンダリング
+- その他のExpo SDKパッケージ
 
 ## 詳細情報
 
@@ -170,4 +202,23 @@ eas init
 ```bash
 npx expo install --check
 npx expo install --fix
+```
+
+### Keystoreが見つからない場合
+
+初回ビルド時にKeystoreを生成する必要があります：
+
+```bash
+eas build --platform android --profile preview-apk
+```
+
+対話モードで「Generate new keystore」を選択してください。
+
+### EAS Updateが動作しない場合
+
+`expo-updates`パッケージが正しくインストールされているか確認：
+
+```bash
+npx expo install expo-updates
+eas update:configure
 ```

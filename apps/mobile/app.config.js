@@ -27,6 +27,12 @@ export default {
     bundler: 'metro'
   },
   platforms: ['ios', 'android', 'web'],
+  updates: {
+    url: 'https://u.expo.dev/9799947d-7655-4c9a-b7c2-7f500f1a0ff4'
+  },
+  runtimeVersion: {
+    policy: 'appVersion'
+  },
   extra: {
     apiUrl: process.env.EXPO_PUBLIC_API_URL,
     eas: {
