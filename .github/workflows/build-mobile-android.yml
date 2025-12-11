@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'apps/mobile/**'
+      - '!apps/mobile/Dockerfile.local'
       - '.github/workflows/build-mobile-android.yml'
   workflow_dispatch:
     inputs:

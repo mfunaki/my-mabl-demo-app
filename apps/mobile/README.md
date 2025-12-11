@@ -214,4 +214,57 @@ gcloud run services describe expense-mobile-web \
 または、ブラウザで：
 https://console.cloud.google.com/run → `expense-mobile-web` サービスを選択
 
-### デプロイされるURL
+### CI/CD (GitHub Actions)
+
+### 必要なシークレット
+
+以下のシークレットがGitHubリポジトリに設定されている必要があります：
+
+- `EXPO_TOKEN`: Expoの認証トークン
+- `GCP_PROJECT_ID`: Google CloudプロジェクトID
+- `GCP_SA_KEY`: Google Cloudサービスアカウントキー（JSON形式）
+
+### 初回ビルドの準備
+
+#### Android: Keystoreの生成
+
+Android APKのビルドを実行する前に、ローカルで一度ビルドを実行してKeystoreを生成する必要があります：
+
+```bash
+cd apps/mobile
+eas build --platform android --profile preview-apk
+```
+
+対話プロンプトで「Generate new keystore」を選択してください。Keystoreが Expo サーバーに保存され、以降のGitHub Actionsでの自動ビルドで使用されます。
+
+#### iOS: Provisioning Profileの設定
+
+iOS版のビルドを実行する前に、Apple Developer アカウントでProvisioning Profileを設定する必要があります（シミュレーター版は不要）。
+
+### ワークフローのトリガー条件
+
+各ワークフローは以下の条件でトリガーされます：
+
+#### Android APKビルド
+- **自動**: `apps/mobile/**`の変更（`Dockerfile.local`を除く）
+- **手動**: GitHub Actionsから「Run workflow」
+
+#### iOS アプリビルド
+- **自動**: `apps/mobile/**`の変更（`Dockerfile.local`を除く）
+- **手動**: GitHub Actionsから「Run workflow」
+
+#### Web版デプロイ
+- **自動**: `apps/mobile/**`の変更
+- **手動**: GitHub Actionsから「Run workflow」
+
+### ワークフローの無効化
+
+特定のワークフローを一時的に無効化したい場合：
+
+```bash
+# コミットメッセージに [skip ci] を含める
+git commit -m "Update README [skip ci]"
+
+# または、特定のファイルのみ変更する
+# 例: Dockerfile.local の変更は Android/iOS ビルドをトリガーしない
+```
