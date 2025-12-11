@@ -99,30 +99,39 @@ jobs:
         env:
           EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL }}
         run: |
-          # 最初に非対話モードで試行
-          if eas build --platform android \
+          # ビルドを実行してJSON出力を保存
+          eas build --platform android \
             --profile ${{ github.event.inputs.profile || 'preview-apk' }} \
             --non-interactive \
-            --json > build-output.json 2>&1; then
-            echo "Build started successfully"
-          else
-            # Keystore生成が必要な場合は失敗する
-            echo "Build failed - Keystore may need to be generated"
-            echo "Please run 'eas build --platform android --profile preview-apk' locally first"
+            --json > build-output.json 2>&1 || true
+          
+          echo "=== Build Output ==="
+          cat build-output.json
+          
+          # JSONの妥当性を確認
+          if ! jq empty build-output.json 2>/dev/null; then
+            echo "Invalid JSON output"
+            echo "Raw output:"
             cat build-output.json
             exit 1
           fi
           
-          cat build-output.json
-          BUILD_ID=$(jq -r '.[0].id // .id' build-output.json)
-          echo "Build ID: $BUILD_ID"
+          # ビルドIDを抽出（配列または単一オブジェクト）
+          BUILD_ID=$(jq -r 'if type=="array" then .[0].id else .id end' build-output.json 2>/dev/null || echo "")
           
           if [ -z "$BUILD_ID" ] || [ "$BUILD_ID" = "null" ]; then
             echo "Failed to extract build ID"
+            echo "Attempting alternative extraction..."
+            BUILD_ID=$(jq -r '.id // .[].id // empty' build-output.json 2>/dev/null || echo "")
+          fi
+          
+          if [ -z "$BUILD_ID" ] || [ "$BUILD_ID" = "null" ]; then
+            echo "Error: Could not extract build ID from output"
             cat build-output.json
             exit 1
           fi
           
+          echo "Build ID: $BUILD_ID"
           echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
 
       - name: Wait for build completion
