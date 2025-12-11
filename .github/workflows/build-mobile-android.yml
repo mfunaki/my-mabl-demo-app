@@ -72,6 +72,13 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
+      - name: Initialize EAS project
+        working-directory: apps/mobile
+        run: |
+          if [ ! -f ".easrc" ]; then
+            eas init --id ${{ secrets.EXPO_PROJECT_ID }} --non-interactive || echo "EAS already initialized"
+          fi
+
       - name: Install dependencies
         working-directory: apps/mobile
         run: npm install --legacy-peer-deps

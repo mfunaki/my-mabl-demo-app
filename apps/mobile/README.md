@@ -87,13 +87,57 @@ npx expo export:web
 
 静的ファイルが `web-build` ディレクトリに生成されます。
 
+## CI/CD (GitHub Actions)
+
+### 必要なシークレット
+
+GitHub Actionsでビルドとデプロイを行うために、以下のシークレットをリポジトリに設定する必要があります。
+
+#### Expo関連
+- `EXPO_TOKEN`: Expoアクセストークン
+  - 取得方法: https://expo.dev/accounts/[username]/settings/access-tokens
+- `EXPO_PROJECT_ID`: ExpoプロジェクトID
+  - 確認方法: https://expo.dev のプロジェクトページのURL
+- `EXPO_USERNAME`: Expoユーザー名
+- `EXPO_PUBLIC_API_URL`: APIのエンドポイントURL
+
+#### mabl関連
+- `MABL_API_KEY`: mabl APIキー
+  - 取得方法: mablの設定ページから生成
+- `MABL_WORKSPACE_ID`: mablワークスペースID
+  - 確認方法: mablのワークスペース設定
+
+#### GitHub関連（オプション）
+- `PAT_TOKEN`: Personal Access Token（バージョンバンプのコミット用）
+  - 権限: `repo` スコープ
+
+### シークレットの設定方法
+
+1. GitHubリポジトリの `Settings` → `Secrets and variables` → `Actions` に移動
+2. `New repository secret` をクリック
+3. 各シークレットの名前と値を入力して保存
+
+### ワークフロー
+
+#### Android APKビルド
+- ファイル: `.github/workflows/build-mobile-android.yml`
+- トリガー: `apps/mobile/**` の変更時、または手動実行
+- 出力: APKファイル、mablへのアップロード、GitHubリリース
+
+#### iOS アプリビルド
+- ファイル: `.github/workflows/build-mobile-ios.yml`
+- トリガー: 手動実行
+- 出力: IPAファイル、mablへのアップロード
+
 ## プロジェクト構成
 
 ```
 /apps/mobile
 ├── App.tsx           # メインアプリコンポーネント
 ├── index.ts          # エントリーポイント
-├── app.json          # Expo設定ファイル
+├── app.config.js     # Expo設定ファイル（動的）
+├── eas.json          # EASビルド設定
+├── .npmrc            # npm設定（legacy-peer-deps）
 └── package.json      # 依存関係とスクリプト
 ```
 
@@ -102,12 +146,28 @@ npx expo export:web
 - [Expo ドキュメント](https://docs.expo.dev/) - Expoの機能とAPIについて
 - [React Native ドキュメント](https://reactnative.dev/docs/getting-started) - React Nativeについて
 - [EAS Build](https://docs.expo.dev/build/introduction/) - クラウドでアプリをビルド
+- [mabl ドキュメント](https://help.mabl.com/) - mablモバイルテスト
 
 ## トラブルシューティング
 
-依存関係の解決に問題が発生した場合は、以下を試してください：
+### 依存関係の解決に問題が発生した場合
 
 ```bash
 rm -rf node_modules package-lock.json
 npm install --legacy-peer-deps
+```
+
+### EAS初期化
+
+ローカルでEASプロジェクトを初期化する場合:
+
+```bash
+eas init
+```
+
+### expo doctorでエラーが出る場合
+
+```bash
+npx expo install --check
+npx expo install --fix
 ```
