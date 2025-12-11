@@ -94,131 +94,124 @@ npx eas build --platform android
 ### Webビルド
 
 ```bash
-npx expo export:web
+npx expo export --platform web --output-dir web-build
 ```
 
 静的ファイルが `web-build` ディレクトリに生成されます。
 
-## CI/CD (GitHub Actions)
+## ローカルでのWeb版動作確認
 
-### 必要なシークレット
-
-GitHub Actionsでビルドとデプロイを行うために、以下のシークレットをリポジトリに設定する必要があります。
-
-#### Expo関連
-- `EXPO_TOKEN`: Expoアクセストークン
-  - 取得方法: https://expo.dev/accounts/[username]/settings/access-tokens
-- `EXPO_USERNAME`: Expoユーザー名
-- `EXPO_PUBLIC_API_URL`: APIのエンドポイントURL
-
-**注**: `EXPO_PROJECT_ID`は不要です（`app.config.js`に記載済み）
-
-#### mabl関連
-- `MABL_API_KEY`: mabl APIキー
-  - 取得方法: mablの設定ページから生成
-- `MABL_WORKSPACE_ID`: mablワークスペースID
-  - 確認方法: mablのワークスペース設定
-
-#### GitHub関連（オプション）
-- `PAT_TOKEN`: Personal Access Token（バージョンバンプのコミット用）
-  - 権限: `repo` スコープ
-
-### シークレットの設定方法
-
-1. GitHubリポジトリの `Settings` → `Secrets and variables` → `Actions` に移動
-2. `New repository secret` をクリック
-3. 各シークレットの名前と値を入力して保存
-
-### ワークフロー
-
-#### Android APKビルド
-- ファイル: `.github/workflows/build-mobile-android.yml`
-- トリガー: `apps/mobile/**` の変更時、または手動実行
-- 出力: APKファイル、mablへのアップロード、GitHubリリース
-
-#### iOS アプリビルド
-- ファイル: `.github/workflows/build-mobile-ios.yml`
-- トリガー: 手動実行
-- 出力: IPAファイル、mablへのアップロード
-
-## プロジェクト構成
-
-```
-/apps/mobile
-├── App.tsx           # メインアプリコンポーネント
-├── index.ts          # エントリーポイント
-├── app.config.js     # Expo設定ファイル（動的）
-│                     # - EASプロジェクトID
-│                     # - EAS Update URL
-│                     # - ランタイムバージョン設定
-├── eas.json          # EASビルド設定
-├── .npmrc            # npm設定（legacy-peer-deps）
-└── package.json      # 依存関係とスクリプト
-```
-
-## 重要な設定
-
-### app.config.js
-
-このファイルには以下の重要な設定が含まれています：
-
-- **EASプロジェクトID**: `extra.eas.projectId`
-- **EAS Update URL**: `updates.url`
-- **ランタイムバージョン**: `runtimeVersion.policy = 'appVersion'`
-- **アプリバージョン管理**: `cli.appVersionSource = 'remote'`
-
-### 依存パッケージ
-
-- `expo-updates`: OTAアップデート機能
-- `react-native-web`: Web版のレンダリング
-- その他のExpo SDKパッケージ
-
-## 詳細情報
-
-- [Expo ドキュメント](https://docs.expo.dev/) - Expoの機能とAPIについて
-- [React Native ドキュメント](https://reactnative.dev/docs/getting-started) - React Nativeについて
-- [EAS Build](https://docs.expo.dev/build/introduction/) - クラウドでアプリをビルド
-- [mabl ドキュメント](https://help.mabl.com/) - mablモバイルテスト
-
-## トラブルシューティング
-
-### 依存関係の解決に問題が発生した場合
+### 方法1: 開発サーバーで確認（最も簡単）
 
 ```bash
-rm -rf node_modules package-lock.json
-npm install --legacy-peer-deps
+# Web版を起動
+npm run web
 ```
 
-### EAS初期化
+ブラウザで [http://localhost:8081](http://localhost:8081) を開いて確認できます。
 
-ローカルでEASプロジェクトを初期化する場合:
+### 方法2: ビルド版をローカルサーバーで確認
 
 ```bash
-eas init
+# 環境変数を設定
+export EXPO_PUBLIC_API_URL="http://localhost:8000"
+
+# Web用にビルド
+npx expo export --platform web --output-dir web-build
+
+# ローカルサーバーで配信
+cd web-build
+npx serve -p 8080
+
+# または Python を使用
+python3 -m http.server 8080
 ```
 
-### expo doctorでエラーが出る場合
+ブラウザで [http://localhost:8080](http://localhost:8080) を開いて確認できます。
+
+### 方法3: Dockerでの動作確認（本番環境に最も近い）
 
 ```bash
-npx expo install --check
-npx expo install --fix
+# Dockerイメージをビルド
+docker build \
+  --build-arg EXPO_PUBLIC_API_URL="http://localhost:8000" \
+  -t expense-mobile-web:local \
+  -f Dockerfile.local \
+  .
+
+# コンテナを起動
+docker run -p 8080:8080 expense-mobile-web:local
+
+# ブラウザで確認
+# http://localhost:8080
 ```
 
-### Keystoreが見つからない場合
-
-初回ビルド時にKeystoreを生成する必要があります：
+#### Docker認証エラーが発生した場合
 
 ```bash
-eas build --platform android --profile preview-apk
+# 認証設定をリセット
+rm ~/.docker/config.json
+echo '{"auths":{}}' > ~/.docker/config.json
+
+# イメージを事前にプル
+docker pull node:20-alpine
+docker pull nginx:alpine
+
+# 再度ビルド
+docker build --build-arg EXPO_PUBLIC_API_URL="http://localhost:8000" \
+  -t expense-mobile-web:local -f Dockerfile.local .
 ```
 
-対話モードで「Generate new keystore」を選択してください。
+## Web版のデプロイ（Google Cloud Run）
 
-### EAS Updateが動作しない場合
+### 前提条件
 
-`expo-updates`パッケージが正しくインストールされているか確認：
+以下のGitHub Secretsが設定されている必要があります：
+
+- `GCP_PROJECT_ID`: Google CloudプロジェクトID
+- `WIF_PROVIDER`: Workload Identity Federationプロバイダー
+- `WIF_SERVICE_ACCOUNT`: サービスアカウント
+- `EXPO_PUBLIC_API_URL`: APIエンドポイントURL
+
+### 自動デプロイ
+
+`apps/mobile/**` のファイルを変更して `main` ブランチにプッシュすると、自動的にビルドとデプロイが実行されます。
 
 ```bash
-npx expo install expo-updates
-eas update:configure
+git add apps/mobile/
+git commit -m "Update mobile web app"
+git push origin main
 ```
+
+### 手動デプロイ
+
+GitHub Actionsの「Actions」タブから「Build and Deploy Mobile Web」ワークフローを選択し、「Run workflow」をクリックします。
+
+### デプロイ先URLの確認方法
+
+デプロイ完了後、以下の方法でURLを確認できます：
+
+#### 1. GitHub Actionsのログ
+
+- ワークフロー実行ログの「Output service URL」ステップ
+- 「Summary」タブに表示されるQRコード付きURL
+
+#### 2. GitHubリリース
+
+- リポジトリの「Releases」セクション
+- タグ: `mobile-web-v1.0.X`
+- リリースノートに **Service URL** が記載
+
+#### 3. Google Cloud Console
+
+```bash
+gcloud run services describe expense-mobile-web \
+  --platform managed \
+  --region asia-northeast1 \
+  --format 'value(status.url)'
+```
+
+または、ブラウザで：
+https://console.cloud.google.com/run → `expense-mobile-web` サービスを選択
+
+### デプロイされるURL
