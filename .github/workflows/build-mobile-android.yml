@@ -75,8 +75,18 @@ jobs:
       - name: Initialize EAS project
         working-directory: apps/mobile
         run: |
+          # .easrc ファイルが存在しない場合のみ初期化
           if [ ! -f ".easrc" ]; then
-            eas init --id ${{ secrets.EXPO_PROJECT_ID }} --non-interactive || echo "EAS already initialized"
+            if [ -n "${{ secrets.EXPO_PROJECT_ID }}" ]; then
+              echo "Initializing EAS with project ID..."
+              eas init --id ${{ secrets.EXPO_PROJECT_ID }} --non-interactive
+            else
+              echo "EXPO_PROJECT_ID not set, running interactive init..."
+              eas init --non-interactive || true
+            fi
+          else
+            echo "EAS project already initialized"
+            cat .easrc
           fi
 
       - name: Install dependencies

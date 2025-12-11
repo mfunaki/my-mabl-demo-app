@@ -28,6 +28,12 @@ export default {
   },
   platforms: ['ios', 'android', 'web'],
   extra: {
-    apiUrl: process.env.EXPO_PUBLIC_API_URL
+    apiUrl: process.env.EXPO_PUBLIC_API_URL,
+    eas: {
+      projectId: '9799947d-7655-4c9a-b7c2-7f500f1a0ff4'
+    }
+  },
+  cli: {
+    appVersionSource: 'remote'
   }
 };
