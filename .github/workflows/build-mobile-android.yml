@@ -99,34 +99,35 @@ jobs:
         env:
           EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL }}
         run: |
-          # ビルドを実行してJSON出力を保存
+          # ビルドを実行して出力を保存
           eas build --platform android \
             --profile ${{ github.event.inputs.profile || 'preview-apk' }} \
             --non-interactive \
-            --json > build-output.json 2>&1 || true
+            --json > build-output-raw.txt 2>&1 || true
           
-          echo "=== Build Output ==="
+          echo "=== Raw Build Output ==="
+          cat build-output-raw.txt
+          
+          # JSON部分のみを抽出（最初の [ から最後の ] まで）
+          sed -n '/^\[$/,/^\]$/p' build-output-raw.txt > build-output.json
+          
+          echo ""
+          echo "=== Extracted JSON ==="
           cat build-output.json
           
           # JSONの妥当性を確認
           if ! jq empty build-output.json 2>/dev/null; then
-            echo "Invalid JSON output"
-            echo "Raw output:"
-            cat build-output.json
-            exit 1
-          fi
-          
-          # ビルドIDを抽出（配列または単一オブジェクト）
-          BUILD_ID=$(jq -r 'if type=="array" then .[0].id else .id end' build-output.json 2>/dev/null || echo "")
-          
-          if [ -z "$BUILD_ID" ] || [ "$BUILD_ID" = "null" ]; then
-            echo "Failed to extract build ID"
+            echo "Error: Failed to extract valid JSON"
             echo "Attempting alternative extraction..."
-            BUILD_ID=$(jq -r '.id // .[].id // empty' build-output.json 2>/dev/null || echo "")
+            # 別の方法: grep で JSON行のみを抽出
+            grep -E '^\s*[\[{]|^\s*".*":|^\s*[\]}]' build-output-raw.txt > build-output.json || true
           fi
           
+          # ビルドIDを抽出
+          BUILD_ID=$(jq -r '.[0].id // .id // empty' build-output.json 2>/dev/null || echo "")
+          
           if [ -z "$BUILD_ID" ] || [ "$BUILD_ID" = "null" ]; then
-            echo "Error: Could not extract build ID from output"
+            echo "Error: Could not extract build ID"
             cat build-output.json
             exit 1
           fi
