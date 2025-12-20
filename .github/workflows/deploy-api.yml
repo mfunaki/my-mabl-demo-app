@@ -112,7 +112,7 @@ jobs:
             echo "Error: MABL_API_KEY is not set"
             exit 1
           fi
-          mabl-cli auth activate-key "$MABL_API_KEY"
+          mabl auth activate-key "$MABL_API_KEY"
           echo "Authentication completed"
 
       - name: Run mabl tests
