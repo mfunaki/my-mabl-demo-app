@@ -99,7 +99,7 @@ jobs:
           echo "SERVICE_URL=$SERVICE_URL" >> $GITHUB_OUTPUT
 
       - name: Install mabl CLI
-        run: npm install -g mabl-cli
+        run: npm install -g @mablhq/mabl-cli
 
       - name: Run mabl tests
         env:
