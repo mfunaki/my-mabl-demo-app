@@ -155,6 +155,7 @@ GitHubリポジトリの **Settings → Secrets and variables → Actions → Re
 | `WIF_SERVICE_ACCOUNT` | `github-actions@YOUR_PROJECT_ID.iam.gserviceaccount.com` | サービスアカウント |
 | `CLOUD_SQL_CONNECTION_NAME` | `PROJECT_ID:asia-northeast1:expense-db` | Cloud SQL接続名 |
 | `CORS_ORIGIN` | `https://your-frontend-domain.com` または `*` (開発時) | フロントエンドのURL |
+| `MABL_API_KEY` | mabl APIキー | mablテスト実行用の認証キー |
 
 ### WIF_PROVIDER の取得方法
 
@@ -192,7 +193,25 @@ gcloud run services describe expense-app-api \
 
 ### 4.4 CIでのAPIテスト (mabl)
 
-- ワークフロー `.github/workflows/deploy-api.yml` はデプロイ成功後に mabl CLI（`npm install -g @mablhq/mabl-cli`）をインストールし、`mabl-cli auth activate-key $MABL_API_KEY` で認証してから `mabl tests run --id ykrgAm2iDrn2sTYoH3Xm3Q-j --reporter mabl` を実行してAPIを検証します（`--reporter mabl` を指定すると結果がmablアプリに公開されます）。
+ワークフロー `.github/workflows/deploy-api.yml` はデプロイ成功後に以下の手順でmablテストを実行します：
+
+1. **mabl CLI のインストール**  
+   ```bash
+   npm install -g @mablhq/mabl-cli
+   ```
+
+2. **認証**  
+   ```bash
+   mabl-cli auth activate-key ${{ secrets.MABL_API_KEY }}
+   ```
+
+3. **テスト実行**  
+   ```bash
+   mabl tests run --id ykrgAm2iDrn2sTYoH3Xm3Q-j --reporter mabl
+   ```
+   `--reporter mabl` を指定することで、テスト結果がmablアプリに自動的に公開されます。
+
+**設定要件:**
 - 必須シークレット: `MABL_API_KEY` (リポジトリ secrets) を設定してください。
 - mabl 側のテストIDを変更する場合はワークフロー内の `mabl tests run --id ...` を更新してください。
 - テスト失敗時はジョブが失敗するので、Actions タブでログを確認し、必要に応じてリトライしてください。
