@@ -105,4 +105,4 @@ jobs:
         run: mabl auth activate-key "${{ secrets.MABL_API_KEY }}"
 
       - name: Run mabl tests
-        run: mabl tests run --id ykrgAm2iDrn2sTYoH3Xm3Q-j --reporter mabl
+        run: mabl tests run --id ykrgAm2iDrn2sTYoH3Xm3Q-j
