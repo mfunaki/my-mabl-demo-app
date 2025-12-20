@@ -252,6 +252,36 @@ gcloud sql instances describe expense-db
 gcloud secrets versions access latest --secret=database-url
 ```
 
+### mabl テスト実行エラーの対応
+
+**エラー: `AxiosError: Request failed with status code 403`**
+
+このエラーは mabl API への認証に失敗していることを示します。以下を確認してください：
+
+1. **MABL_API_KEY シークレットの確認**  
+   GitHub リポジトリの **Settings → Secrets and variables → Actions → Repository secrets** で `MABL_API_KEY` が正しく設定されているか確認
+
+2. **mabl APIキーの有効性確認**  
+   - mabl アプリ（https://app.mabl.com）にログイン
+   - Settings → API Keys を確認
+   - APIキーが有効か、削除されていないか確認
+
+3. **テストIDの確認**  
+   - mabl アプリで該当テストが存在するか確認
+   - 正しいテストID（`ykrgAm2iDrn2sTYoH3Xm3Q-j`）を使用しているか確認
+
+4. **ローカルでの検証**  
+   ```bash
+   npm install -g @mablhq/mabl-cli
+   mabl-cli auth activate-key YOUR_MABL_API_KEY
+   mabl tests run --id ykrgAm2iDrn2sTYoH3Xm3Q-j --reporter mabl
+   ```
+   ローカルで同じコマンドを実行して、同じエラーが出るか確認
+
+5. **APIキーの権限確認**  
+   - mabl側でAPIキーに「テスト実行」権限があるか確認
+   - 必要に応じて新しいAPIキーを生成し、Repository secrets を更新
+
 ## 7. セキュリティのベストプラクティス
 
 - ✅ 環境変数ファイル(`.env`)をGitに含めない
