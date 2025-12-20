@@ -192,7 +192,7 @@ gcloud run services describe expense-app-api \
 
 ### 4.4 CIでのAPIテスト (mabl)
 
-- ワークフロー `.github/workflows/deploy-api.yml` はデプロイ成功後に mabl CLI（`npm install -g @mablhq/mabl-cli`）をインストールし、`mabl tests run --id ykrgAm2iDrn2sTYoH3Xm3Q-j --reporter mabl` を実行してAPIを検証します（`--reporter mabl` を指定すると結果がmablアプリに公開されます）。
+- ワークフロー `.github/workflows/deploy-api.yml` はデプロイ成功後に mabl CLI（`npm install -g @mablhq/mabl-cli`）をインストールし、`mabl-cli auth activate-key $MABL_API_KEY` で認証してから `mabl tests run --id ykrgAm2iDrn2sTYoH3Xm3Q-j --reporter mabl` を実行してAPIを検証します（`--reporter mabl` を指定すると結果がmablアプリに公開されます）。
 - 必須シークレット: `MABL_API_KEY` (リポジトリ secrets) を設定してください。
 - mabl 側のテストIDを変更する場合はワークフロー内の `mabl tests run --id ...` を更新してください。
 - テスト失敗時はジョブが失敗するので、Actions タブでログを確認し、必要に応じてリトライしてください。
