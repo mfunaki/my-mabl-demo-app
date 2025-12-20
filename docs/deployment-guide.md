@@ -256,31 +256,43 @@ gcloud secrets versions access latest --secret=database-url
 
 **エラー: `AxiosError: Request failed with status code 403`**
 
-このエラーは mabl API への認証に失敗していることを示します。以下を確認してください：
+認証は成功しているが、テスト実行時に 403 エラーが発生する場合：
 
-1. **MABL_API_KEY シークレットの確認**  
-   GitHub リポジトリの **Settings → Secrets and variables → Actions → Repository secrets** で `MABL_API_KEY` が正しく設定されているか確認
+1. **テストIDとワークスペースの確認**  
+   - mabl アプリ（https://app.mabl.com）で該当テストを開く
+   - URLから正しいテストIDを確認（例: `/tests/{test-id}`）
+   - そのテストが存在するワークスペースを確認
 
-2. **mabl APIキーの有効性確認**  
-   - mabl アプリ（https://app.mabl.com）にログイン
-   - Settings → API Keys を確認
-   - APIキーが有効か、削除されていないか確認
+2. **APIキーの権限確認**  
+   - mabl アプリ → Settings → API Keys
+   - 使用しているAPIキーが正しいワークスペースに所属しているか確認
+   - APIキーに「Test Execution」権限があるか確認
 
-3. **テストIDの確認**  
-   - mabl アプリで該当テストが存在するか確認
-   - 正しいテストID（`ykrgAm2iDrn2sTYoH3Xm3Q-j`）を使用しているか確認
+3. **ワークスペースIDの指定**  
+   複数のワークスペースがある場合、ワークスペースIDを明示的に指定する必要があります：
+   ```bash
+   mabl tests run --id ykrgAm2iDrn2sTYoH3Xm3Q-j --workspace-id YOUR_WORKSPACE_ID --reporter mabl
+   ```
+   ワークスペースIDは mabl アプリの Settings → Workspace から確認できます。
 
-4. **ローカルでの検証**  
+4. **環境IDの指定（推奨）**  
+   環境変数やFind情報を使用する場合：
+   ```bash
+   mabl tests run --id ykrgAm2iDrn2sTYoH3Xm3Q-j --environment-id YOUR_ENVIRONMENT_ID --reporter mabl
+   ```
+
+5. **ローカルでの検証**  
    ```bash
    npm install -g @mablhq/mabl-cli
-   mabl-cli auth activate-key YOUR_MABL_API_KEY
+   mabl auth activate-key YOUR_MABL_API_KEY
    mabl tests run --id ykrgAm2iDrn2sTYoH3Xm3Q-j --reporter mabl
    ```
    ローカルで同じコマンドを実行して、同じエラーが出るか確認
 
-5. **APIキーの権限確認**  
-   - mabl側でAPIキーに「テスト実行」権限があるか確認
-   - 必要に応じて新しいAPIキーを生成し、Repository secrets を更新
+6. **新しいAPIキーの生成**  
+   - mabl アプリで新しいAPIキーを生成
+   - 正しいワークスペースとスコープ（Test Execution）を選択
+   - GitHub Repository secrets の `MABL_API_KEY` を更新
 
 ## 7. セキュリティのベストプラクティス
 
