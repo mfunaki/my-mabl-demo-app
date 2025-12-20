@@ -99,10 +99,18 @@ jobs:
           echo "SERVICE_URL=$SERVICE_URL" >> $GITHUB_OUTPUT
 
       - name: Install mabl CLI
-        run: npm install -g @mablhq/mabl-cli
+        run: |
+          npm install -g @mablhq/mabl-cli
+          mabl --version
 
       - name: Authenticate mabl CLI
-        run: mabl auth activate-key "${{ secrets.MABL_API_KEY }}"
+        env:
+          MABL_API_KEY: ${{ secrets.MABL_API_KEY }}
+        run: |
+          echo "Authenticating mabl CLI..."
+          mabl auth activate-key "$MABL_API_KEY"
 
       - name: Run mabl tests
+        env:
+          MABL_API_KEY: ${{ secrets.MABL_API_KEY }}
         run: mabl tests run --id ykrgAm2iDrn2sTYoH3Xm3Q-j
