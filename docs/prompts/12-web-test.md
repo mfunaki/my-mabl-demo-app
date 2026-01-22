@@ -13,7 +13,7 @@
 ### 事前準備
 1. APIサーバーが起動していること
 2. `POST /api/reset` で初期化済みであること
-3. Employee による経費申請が作成されていること（例: タイトル「Conference」、金額「5000」）
+3. Employee による経費申請が作成されていること（例: タイトル「Taxi」、金額「1500」）
 
 ## テストシナリオ: マネージャーによる経費承認フロー
 
@@ -78,34 +78,34 @@
 
 ---
 
-### ステップ 4: 「Conference」申請を探す
+### ステップ 4: 「Taxi」申請を探す
 
 **アクション**: 一覧から特定の申請を確認
 
-- **検索条件**: タイトルが「Conference」である行を特定
+- **検索条件**: タイトルが「Taxi」である行を特定
   - 行の `data-testid` は `expense-row-{id}` の形式
-  - テーブル内で「Conference」というテキストを探す
+  - テーブル内で「Taxi」というテキストを探す
 
 - **期待される行の内容**:
-  - **Title**: "Conference"
-  - **Amount**: "5000"
+  - **Title**: "Taxi"
+  - **Amount**: "1500"
   - **Status**: "PENDING" （ステータスが承認前であること）
   - **Applicant**: "employee"
 
 - **検証項目**:
-  - Conference の申請行が表示されていること
+  - Taxi の申請行が表示されていること
   - ステータスが「PENDING」であること
-  - 金額が 5000 であること
+  - 金額が 1500 であること
 
 ---
 
 ### ステップ 5: 承認ボタンをクリック
 
-**アクション**: Conference 申請の承認処理
+**アクション**: Taxi 申請の承認処理
 
 - **対象ボタン**:
   - `data-testid="approve-button-{id}"` の形式
-  - Conference 申請に対応するボタン（例: `approve-button-1`）
+  - Taxi 申請に対応するボタン（例: `approve-button-1`）
 
 - **実行内容**:
   1. 承認ボタンをクリック
@@ -123,10 +123,10 @@
 
 ### ステップ 6: ステータスの更新確認
 
-**アクション**: ページを更新し、Conference のステータスが APPROVED に変わったことを確認
+**アクション**: ページを更新し、Taxi のステータスが APPROVED に変わったことを確認
 
 - **検証項目**:
-  - Conference の申請行が引き続き表示されていること
+  - Taxi の申請行が引き続き表示されていること
   - ステータスが「APPROVED」に変わっていること
   - 申請の詳細情報（Title, Amount, Applicant）は変更されていないこと
 
@@ -199,7 +199,7 @@ INTERNAL_API_URL=https://expense-app-api-xxxxx.run.app  # またはローカル:
 | ログインボタンが無効状態 | 入力フィールドが空 | Username と Password を確認 |
 | 承認ボタンが表示されない | Employee ロールでログイン | Manager ロール (`manager`/`manager123`) でログインしてください |
 | ステータスが更新されない | API がエラーを返している | ネットワークタブで API レスポンスを確認 |
-| 「Conference」が見つからない | API リセット未実行 | 事前条件として `/api/reset` を実行してください |
+| 「Taxi」が見つからない | API リセット未実行 | 事前条件として `/api/reset` を実行してください |
 | CORS エラー | `CORS_ORIGIN` 未設定 | APIサーバーの環境変数 `CORS_ORIGIN` を確認 |
 
 ---
