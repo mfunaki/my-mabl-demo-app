@@ -79,6 +79,64 @@ style: |
     color: #d63384;
   }
 
+  /* --- 本文ページ（コンパクト版） (body-compact) --- */
+  section.body-compact {
+    padding-top: 130px;
+    padding-left: 80px;
+    padding-right: 80px;
+    padding-bottom: 60px;
+    justify-content: flex-start;
+    background-image: url('../assets/common/bg_body.jpg');
+    background-size: cover;
+    font-size: 22px;
+    line-height: 1.4;
+    color: #34495e;
+  }
+
+  section.body-compact h1 {
+    position: absolute;
+    left: 55px;
+    top: 70px;
+    font-size: 36px;
+    color: #312051;
+    margin: 0;
+    border: none;
+  }
+
+  section.body-compact h2 {
+    font-size: 26px;
+    margin-top: 0;
+    margin-bottom: 10px;
+  }
+
+  section.body-compact strong {
+    color: #6a1b9a;
+  }
+
+  section.body-compact pre {
+    background: #f8f9fa;
+    border: 1px solid #e1e4e8;
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    margin: 8px 0;
+  }
+
+  section.body-compact code {
+    font-family: 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 0.8em;
+    color: #d63384;
+  }
+
+  section.body-compact ul, section.body-compact ol {
+    margin: 8px 0;
+    padding-left: 24px;
+  }
+
+  section.body-compact li {
+    margin: 4px 0;
+  }
+
   /* --- 最終ページ専用 (blank-layout) --- */
   section.blank-layout {
     display: flex;
@@ -113,14 +171,32 @@ style: |
 <!-- class: body-layout -->
 # 本日のアジェンダ
 
-1. **テスト自動化の現状と課題**
-2. **AIによるテスト生成の進化**
-3. **自然言語からテストへ**
-4. **ローカル実行機能の活用**
-5. **クラウドとのシームレスな連携**
-6. **CLI/MCPを活用した開発ワークフロー**
-7. **デモ：mabl-cosmeアプリケーション**
-8. **ベストプラクティス**
+1. **品質に対するギャップの拡大**
+2. **テスト自動化の現状と課題**
+3. **AIによるテスト生成の進化**
+4. **今回のテスト対象：経費管理アプリ**
+5. **自然言語からテストへ**
+6. **ローカル実行機能の活用**
+7. **クラウドとのシームレスな連携**
+8. **CLI/MCPを活用した開発ワークフロー**
+9. **デモ**
+10. **ベストプラクティス**
+
+---
+
+# 開発スピード vs テスト
+
+![bg right:60% contain](assets/ja/images/quality_gap.jpg)
+
+**開発(Dev)**
+生成AI活用、アジャイル、内製化により
+スピードは**劇的に向上**
+
+**品質保証(QA)**
+手動テスト、壊れやすい
+自動化...
+手法が旧来のままで
+**ボトルネック化**
 
 ---
 
@@ -137,38 +213,63 @@ style: |
 
 ---
 
-# AIによるテスト生成の進化
+# テスト自動化の進化
 
-## 2026年のテスト自動化
+## 従来 → ノーコード → AI時代
 
-| 従来 | AI時代 |
-|------|--------|
-| 手動でセレクタを指定 | 自然言語で意図を伝える |
-| コードを書いてテスト作成 | プロンプトからテスト生成 |
-| 固定的なアサーション | AIによる柔軟な検証 |
-| ローカル or クラウド | シームレスな統合 |
+| 観点 | 従来（コードベース） | ノーコード | AI時代 |
+|------|---------------------|------------|--------|
+| **要素特定** | 手動でセレクタを記述 | 操作を記録して自動取得 | 自然言語で意図を伝える |
+| **テスト作成** | コードを書いて作成 | 画面操作をキャプチャ | プロンプトから自動生成 |
+| **検証方法** | 固定的なアサーション | UIベースの値チェック | AIによる柔軟な検証 |
+| **実行環境** | ローカル or クラウド | クラウド中心(スケーラブル) | シームレスな統合 |
 
-**キーワード**: Shift Left + AI = 開発者体験の向上
+**各時代の特徴**
+- **従来**: 開発者がコードで自動化（Selenium等）
+- **ノーコード**: QAが操作を記録して自動化
+- **AI時代**: 意図を伝えてテストを生成 → **Shift Left**
 
 ---
 
+# 今回のテスト対象：経費管理アプリ
+
+![bg right:40% vertical contain](assets/ja/images/mabl-expense-manager.png)
+![bg contain](assets/ja/images/mabl-expense-employee.png)
+
+## アプリ構成
+
+| アプリ | ユーザー | 機能 |
+|--------|----------|------|
+| **Web** | Manager | 経費一覧の閲覧・承認 |
+| **Mobile** | Employee | 経費の申請・履歴確認 |
+| **API** | - | データ管理・認証 |
+
+**テストシナリオ**: 従業員が申請 → 管理者が承認 → 従業員が確認
+
+---
+<!-- _class: body-compact -->
 # 自然言語からテストへ
+
+![bg right:40% contain](assets/ja/images/mabl-expense-manager.png)
 
 ## プロンプトによるテスト生成
 
 ```
-「ユーザーがログインして、画像をアップロードし、
-AI背景生成を実行して、保存するフローをテストして」
+mabl-expenseアプリに、管理者(manager)としてログインし、
+部下が申請した経費を確認した上で、未承認の申請を承認するテストを作成して
 ```
 
 ↓ mablが自動生成
 
-- ログインフォームへの入力
-- 画像アップロードの操作
-- AI生成ボタンのクリック
-- 保存処理の実行と検証
+- ログイン画面で manager / manager123 を入力
+- ダッシュボードで経費一覧を表示
+- 経費の件数(未承認件数)、合計金額をチェック
+- ステータスが PENDING の経費を探す
+- 承認ボタンをクリック
+- ステータスが APPROVED に変わることを検証
 
-**ポイント**: 意図を伝えるだけでテストが完成
+**ポイント**: 業務フローを伝えるだけでテストが完成
+**生成AIアサーション**: 件数や金額の検証もAIが自動判定
 
 ---
 
@@ -246,28 +347,28 @@ CI/CDパイプライン統合
 
 ---
 
-# デモ：mabl-cosme
+# デモ：経費管理アプリ
 
-## 生成AI系SaaSを模したデモアプリ
+## クロスプラットフォームテスト用デモアプリ
 
-- **JWT認証**: サーバーサイド認証フロー
-- **AI機能**: DALL-E 3による背景生成
-- **data-testid**: 安定したセレクタ設計
-- **多言語対応**: 日本語/英語/中国語
+- **マルチアプリ構成**: Web + Mobile + API
+- **認証フロー**: 簡易ヘッダー認証
+- **data-testid**: mablテスト用セレクタ設計
+- **ロール分離**: Manager(Web) / Employee(Mobile)
 
-**URL**: https://mabl-cosme-xxxxxx.run.app
+**テストシナリオ**: Mobile申請 → Web承認 → Mobile確認
 
 ---
 
 # デモ：テスト生成フロー
 
-## ライブデモ
+## ライブデモ - 経費承認テスト
 
-1. **プロンプト入力**: 自然言語でテスト内容を記述
-2. **テスト生成**: mablがステップを自動生成
-3. **ローカル実行**: 開発環境で動作確認
-4. **調整・修正**: 必要に応じてステップを編集
-5. **クラウド実行**: 複数ブラウザでの検証
+1. **プロンプト入力**: 「managerで経費を承認するテスト」
+2. **テスト生成**: mablがログイン〜承認のステップを自動生成
+3. **ローカル実行**: localhost:3000 で動作確認
+4. **調整・修正**: data-testid でセレクタを安定化
+5. **クラウド実行**: Chrome / Firefox / Edge で検証
 
 ---
 
@@ -289,11 +390,11 @@ CI/CDパイプライン統合
 
 | テスト種別 | 推奨ツール | 理由 |
 |-----------|-----------|------|
-| E2Eフロー | **mabl** | 実際のAPI・認証を検証 |
-| APIテスト | **mabl** | JWTフローの統合テスト |
-| UIバリデーション | Playwright | 高速・モック可能 |
-| 多言語確認 | Playwright | Context差し替えで効率的 |
-| 入力エラー | Playwright | クライアント側ロジック |
+| 経費承認フロー | **mabl** | 実際のAPI・DBを検証 |
+| クロスプラットフォーム | **mabl** | Mobile + Web の統合テスト |
+| ログイン検証 | Playwright | 高速・ローカル完結 |
+| UIレイアウト | Playwright | スナップショット比較 |
+| 入力バリデーション | Playwright | クライアント側ロジック |
 
 ---
 
@@ -320,7 +421,7 @@ CI/CDパイプライン統合
 | mabl ドキュメント | https://help.mabl.com/ |
 | mabl CLI | https://help.mabl.com/docs/mabl-cli |
 | MCP Server | npmjs.com/@anthropics/mcp-server-mabl |
-| mabl-cosme (デモ) | github.com/mfunaki/mabl-cosme |
+| 経費管理デモアプリ | github.com/mfunaki/my-mabl-demo-app |
 
 **サポート**: support@mabl.com
 
