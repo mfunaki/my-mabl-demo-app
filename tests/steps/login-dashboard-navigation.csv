@@ -1,8 +1,0 @@
-step_number,action,target,value,context
-1,Visit URL,/login,-,ログインページにアクセスする
-2,Input,username-input,manager,ユーザー名を入力
-3,Input,password-input,manager123,パスワードを入力
-4,Click,login-button,-,ログインボタンをクリック
-5,Assert,header,経費承認ダッシュボード,ダッシュボードヘッダー表示確認
-6,Echo,-,--> ダッシュボードページに正常に遷移できることを確認する,Log message
-7,GenAI Assert,URL,ends with '/dashboard',URLが/dashboardで終わることを検証

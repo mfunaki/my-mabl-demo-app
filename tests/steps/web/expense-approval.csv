@@ -1,0 +1,11 @@
+step_number,action,target,value,context
+1,Set viewport size,viewport,"width: 1080, height: 1440",Set browser viewport
+2,Visit URL,app.url,-,Navigate to application URL
+3,Input,username-input,manager,Enter manager username
+4,Input,password-input,manager123,Enter manager password
+5,Click,login-button,-,Click login button
+6,Assert innerText,dashboard-header,経費承認ダッシュボード,Verify dashboard is displayed
+7,GenAI Assert,unapproved record,exists with approval button,Verify unapproved record has approval button
+8,GenAI Assert,approved records,no approval button,Verify approved records don't have approval button
+9,Assert,total-count,correct count,Verify summary count is correct
+10,Assert,total-amount,correct amount,Verify total amount is correct

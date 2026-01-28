@@ -6,5 +6,5 @@ step_number,action,target,value,context
 5,Echo,-,--> Log in as a Manager User,Log message
 6,Set variable,taxi_expense_id,2,Confirm Taxi Expense Approval Status
 7,Click,承認 button,-,Clicks the Approve button for taxi expense
-8,Assert innerText,<table> element,Taxi employee ¥1,500 APPROVED,Verifies expense status is updated to APPROVED
+8,Assert innerText,<table> element,"Taxi employee ¥1,500 APPROVED",Verifies expense status is updated to APPROVED
 9,Echo,-,--> Confirm 'Taxi' Application Status Update to 'APPROVED',Log message

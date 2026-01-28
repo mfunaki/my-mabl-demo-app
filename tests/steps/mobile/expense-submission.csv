@@ -1,0 +1,12 @@
+step_number,action,target,value,context
+1,Launch app,com.mabl.expense,-,Launch the expense app
+2,Assert visible,Login Screen,-,Verify login screen is displayed
+3,Tap,username-input,-,Tap on username field
+4,Type text,username-input,employee,Enter employee username
+5,Tap,password-input,-,Tap on password field
+6,Type text,password-input,employee123,Enter employee password
+7,Tap,login-button,-,Tap login button
+8,Assert visible,Home Screen,-,Verify home screen is displayed after login
+9,Assert visible,expense-history,-,Verify expense history section is visible
+10,Assert innerText,expense-item-1,タクシー代 ¥1500,Verify taxi fare expense is displayed
+11,Assert innerText,expense-item-2,会議費 ¥5000,Verify meeting expense is displayed
