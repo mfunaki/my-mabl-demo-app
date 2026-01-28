@@ -175,12 +175,11 @@ style: |
 2. **テスト自動化の現状と課題**
 3. **AIによるテスト生成の進化**
 4. **今回のテスト対象：経費管理アプリ**
-5. **自然言語からテストへ**
-6. **ローカル実行機能の活用**
-7. **クラウドとのシームレスな連携**
+5. **自然言語からテストへ**（デモ含む）
+6. **ローカル実行機能の活用**（デモ含む）
+7. **クラウドとのシームレスな連携**（デモ含む）
 8. **CLI/MCPを活用した開発ワークフロー**
-9. **デモ**
-10. **ベストプラクティス**
+9. **ベストプラクティス**
 
 ---
 
@@ -245,6 +244,22 @@ style: |
 | **API** | - | データ管理・認証 |
 
 **テストシナリオ**: 従業員が申請 → 管理者が承認 → 従業員が確認
+
+---
+
+# 自然言語から実装へ
+
+<div style="text-align: center; margin-top: 20px;">
+<img src="assets/ja/images/spec-expense-app.png" style="width: 60%; max-height: 60%;">
+</div>
+
+---
+
+# 仕様書作成のためのLLMとの壁打ち
+
+<div style="text-align: center; margin-top: 20px;">
+<img src="assets/ja/images/discuss_for_spec.png" style="width: 30%; max-height: 30%;">
+</div>
 
 ---
 <!-- _class: body-compact -->
@@ -320,10 +335,11 @@ mcp__mabl__run_mabl_test_cloud
 - **デバッグ容易**: ローカル環境でステップ実行
 - **コスト効率**: クラウド実行前にローカルで検証
 - **オフライン対応**: ネットワーク不要で基本テスト
+- **CI/CDパイプラインへの組み込みが容易**: CLIインストール/呼び出しで実行可能
 
 ```bash
 # mabl CLIでローカル実行
-mabl tests run --id <test-id> --environment <env-id>
+mabl tests run --id <test-id> --environment <env-id> --allow-billable-features
 ```
 
 ---
@@ -335,17 +351,25 @@ mabl tests run --id <test-id> --environment <env-id>
 ```
 開発環境（ローカル）
     ↓ テスト作成・デバッグ
-    ↓ ローカルで動作確認
+    ↓ ローカルで動作確認(CLI/MCPから実行)
     ↓
-クラウド実行
+クラウド実行 (よりスケーラブルな実行が可能)
     ↓ 複数ブラウザ・デバイス
     ↓ 並列実行
     ↓ スケジュール実行
     ↓
-CI/CDパイプライン統合
+CI/CDパイプライン統合 (プラン／テストを指定して実行)
 ```
 
 **同じテストをローカルでもクラウドでも実行可能**
+
+---
+
+# LLM+MCP+CLIでテスト設計改善レポートの自動生成
+
+<div style="text-align: center; margin-top: 20px;">
+<img src="assets/ja/images/test_design_improvement_report.png" style="width: 60%; max-height: 60%;">
+</div>
 
 ---
 
@@ -361,31 +385,6 @@ CI/CDパイプライン統合
 | 4 | デプロイ | 本番監視 |
 
 **ポイント**: テストが開発のボトルネックにならない
-
----
-
-# デモ：経費管理アプリ
-
-## クロスプラットフォームテスト用デモアプリ
-
-- **マルチアプリ構成**: Web + Mobile + API
-- **認証フロー**: 簡易ヘッダー認証
-- **data-testid**: mablテスト用セレクタ設計
-- **ロール分離**: Manager(Web) / Employee(Mobile)
-
-**テストシナリオ**: Mobile申請 → Web承認 → Mobile確認
-
----
-
-# デモ：テスト生成フロー
-
-## ライブデモ - 経費承認テスト
-
-1. **プロンプト入力**: 「managerで経費を承認するテスト」
-2. **テスト生成**: mablがログイン〜承認のステップを自動生成
-3. **ローカル実行**: localhost:3000 で動作確認
-4. **調整・修正**: data-testid でセレクタを安定化
-5. **クラウド実行**: Chrome / Firefox / Edge で検証
 
 ---
 

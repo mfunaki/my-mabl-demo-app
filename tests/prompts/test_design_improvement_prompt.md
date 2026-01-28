@@ -10,12 +10,24 @@ mablテストのCSVファイル（テストステップ定義）を分析し、�
 
 `/tests/steps/` ディレクトリ配下のCSVファイルを参照します。
 
+**対象テスト種別:**
+- **Web テスト** (`[mabl-expense]`, `[mabl-expense-web]`)
+- **Mobile テスト** (`[mabl-expense-mobile]`)
+- **API テスト** (`[mabl-expense-api]`)
+
 ```
 /tests/steps/
-├── login-dashboard-navigation.csv
-├── manager-expense-approval-flow.csv
-├── manager-login.csv
-└── （その他のテストステップCSV）
+├── web/                              # Webテスト
+│   ├── manager-login.csv
+│   ├── manager-expense-approval-flow.csv
+│   ├── expense-approval.csv
+│   └── （その他のWebテストCSV）
+├── mobile/                           # Mobileテスト
+│   ├── expense-submission.csv
+│   └── （その他のMobileテストCSV）
+└── api/                              # APIテスト
+    ├── reset-data.csv
+    └── （その他のAPIテストCSV）
 ```
 
 ### CSVファイルの形式
@@ -39,32 +51,46 @@ step_number,action,target,value,context
 
 ### 2. テスト実行結果アーティファクト（オプション）
 
-`/tests/artifacts/` ディレクトリ配下に、テストごとのサブディレクトリがある場合は参照します。
+`/tests/artifacts/` ディレクトリ配下に、テスト種別ごとのサブディレクトリがある場合は参照します。
 
 ```
 /tests/artifacts/
-├── manager-login/
-│   ├── doms/            # 各ステップのDOM状態（HTML）
-│   ├── hars/            # ネットワークリクエスト/レスポンス（HAR）
-│   ├── screenshots/     # 各ステップのスクリーンショット（PNG）
-│   ├── traces/          # 実行トレース情報（JSON）
-│   ├── console_logs/    # コンソールログ（JSON）
-│   └── manifest.yaml    # アーティファクトのメタデータ
-├── manager-expense-approval-flow/
-│   └── ...
-└── （その他のテストアーティファクト）
+├── web/                                    # Webテスト
+│   ├── manager-login/
+│   │   ├── doms/            # 各ステップのDOM状態（HTML）
+│   │   ├── hars/            # ネットワークリクエスト/レスポンス（HAR）
+│   │   ├── screenshots/     # 各ステップのスクリーンショット（PNG）
+│   │   ├── traces/          # 実行トレース情報（JSON）
+│   │   ├── console_logs/    # コンソールログ（JSON）
+│   │   └── manifest.yaml    # アーティファクトのメタデータ
+│   ├── manager-expense-approval-flow/
+│   │   └── ...
+│   └── （その他のWebテストアーティファクト）
+├── mobile/                                 # Mobileテスト
+│   ├── expense-submission/
+│   │   ├── screenshots/     # 各ステップのスクリーンショット
+│   │   ├── traces/          # 実行トレース情報
+│   │   ├── console_logs/    # コンソールログ
+│   │   └── manifest.yaml    # アーティファクトのメタデータ
+│   └── （その他のMobileテストアーティファクト）
+└── api/                                    # APIテスト
+    ├── reset-data/
+    │   ├── hars/            # APIリクエスト/レスポンス（HAR）
+    │   ├── traces/          # 実行トレース情報
+    │   └── manifest.yaml    # アーティファクトのメタデータ
+    └── （その他のAPIテストアーティファクト）
 ```
 
-### アーティファクトの種類と用途
+### アーティファクトの種類と用途（テスト種別による違い）
 
-| 種類 | ファイル形式 | 分析用途 |
-|------|------------|---------|
-| **screenshots/** | PNG | UI/UXの視覚的確認、ステップ間の画面遷移検証 |
-| **doms/** | HTML | 要素の存在確認、セレクタの妥当性検証 |
-| **hars/** | HAR (JSON) | APIレスポンス時間、エラーレスポンス、ネットワーク遅延の分析 |
-| **traces/** | JSON | 実行時間の詳細、パフォーマンスボトルネックの特定 |
-| **console_logs/** | JSON | JavaScriptエラー、警告の検出 |
-| **manifest.yaml** | YAML | テスト実行のメタ情報（ブラウザ、実行時刻等） |
+| 種類 | Web | Mobile | API | ファイル形式 | 分析用途 |
+|------|-----|--------|-----|------------|---------|
+| **screenshots/** | ✅ | ✅ | - | PNG | UI/UXの視覚的確認、ステップ間の画面遷移検証 |
+| **doms/** | ✅ | - | - | HTML | 要素の存在確認、セレクタの妥当性検証 |
+| **hars/** | ✅ | - | ✅ | HAR (JSON) | APIレスポンス時間、エラーレスポンス、ネットワーク遅延の分析 |
+| **traces/** | ✅ | ✅ | ✅ | JSON | 実行時間の詳細、パフォーマンスボトルネックの特定 |
+| **console_logs/** | ✅ | ✅ | - | JSON | JavaScriptエラー、警告の検出 |
+| **manifest.yaml** | ✅ | ✅ | ✅ | YAML | テスト実行のメタ情報（ブラウザ/デバイス、実行時刻等） |
 
 ## 出力ファイル
 
@@ -298,6 +324,91 @@ DOM、HAR、トレース等）が存在する場合は、それらも参照し�
     - JavaScriptエラーの検出
     - 警告メッセージの確認
     - デバッグ情報の漏洩チェック
+
+13. **Mobileテスト固有の分析観点**（/tests/steps/mobile/ が存在する場合）
+
+    Mobileテストには、Webテストとは異なる特有の考慮事項があります：
+
+    **13.1 タップ・ジェスチャー操作**
+    - タップ対象の要素サイズが十分か（推奨: 44x44px以上）
+    - スワイプ操作の方向・距離が適切か
+    - ロングプレスのタイムアウト設定
+
+    **13.2 デバイス固有の考慮事項**
+    - 画面サイズ・解像度への対応
+    - デバイス回転（Portrait/Landscape）のテスト
+    - ノッチ・セーフエリアへの対応
+
+    **13.3 アプリライフサイクル**
+    - アプリ起動・終了処理の適切さ
+    - バックグラウンド遷移からの復帰
+    - プッシュ通知対応（必要な場合）
+
+    **13.4 ネットワーク状態**
+    - オフライン時の挙動テスト
+    - 低速ネットワーク環境での動作
+
+    **13.5 Mobileテストのベストプラクティス**
+    - `Assert visible` でUI要素の表示を確認
+    - スクロールが必要な要素は `Scroll to` を事前に実行
+    - 入力フィールドへのタップ後にキーボード表示を待機
+
+14. **APIテスト固有の分析観点**（/tests/steps/api/ が存在する場合）
+
+    APIテストでは、UIテストとは異なるレイヤーでの検証が必要です：
+
+    **14.1 リクエスト・レスポンス検証**
+    - HTTPステータスコードの適切な検証（200, 201, 400, 401, 404, 500等）
+    - レスポンスボディの構造検証（JSONスキーマ）
+    - レスポンスヘッダーの検証（Content-Type, Cache-Control等）
+
+    **14.2 認証・認可**
+    - 認証トークンの管理（変数での保持）
+    - 認証切れ時のエラーハンドリング
+    - 権限別のアクセス制御テスト
+
+    **14.3 データ整合性**
+    - CRUD操作の一貫性（Create → Read → Update → Delete）
+    - 同時実行時のデータ競合
+    - トランザクションの整合性
+
+    **14.4 パフォーマンス**
+    - レスポンス時間の閾値設定（目安: 200ms以下）
+    - タイムアウト設定の妥当性
+    - 大量データ時のページネーション
+
+    **14.5 APIテストのベストプラクティス**
+    - 変数で `base_url` を管理し、環境切り替えを容易に
+    - レスポンスから値を抽出し、後続リクエストで使用
+    - エラーレスポンスのテストも忘れずに実施
+
+15. **テスト種別間の連携分析**（Web/Mobile/APIの複数種別が存在する場合）
+
+    異なるテスト種別間での連携・一貫性を確認します：
+
+    **15.1 E2Eフローの整合性**
+    - 例: API（データリセット）→ Mobile（経費申請）→ Web（経費承認）→ Mobile（結果確認）
+    - 各テスト間のデータ受け渡しが適切か
+    - テスト実行順序の依存関係
+
+    **15.2 共通データの管理**
+    - ユーザー認証情報の統一（username, password）
+    - テストデータの一貫性（経費タイトル、金額等）
+    - 環境変数の共有（app.url等）
+
+    **15.3 テストカバレッジの補完**
+    - Webでカバーする機能 vs Mobileでカバーする機能
+    - APIテストで検証すべきバックエンドロジック
+    - 重複テストの削減
+
+    **15.4 連携テストの設計パターン**
+    ```
+    # 推奨パターン
+    1. [API] データリセット・初期化
+    2. [Mobile/Web] ユーザー操作によるデータ作成
+    3. [API] データの状態検証（バックエンド確認）
+    4. [Mobile/Web] UI上での反映確認
+    ```
 
 出力形式：
 - スライド形式のマークダウン（---で区切り）
@@ -605,8 +716,9 @@ Echo: "[END] 経費承認フロー"
 
 アーティファクトが存在するテストについては、CSVだけでは分からない情報を補完できます。
 
-#### スクリーンショットの活用
+#### 8.1 Webテストのアーティファクト分析
 
+**スクリーンショットの活用（screenshots/）**
 ```
 # 確認ポイント
 - 画面遷移が正しく行われているか
@@ -615,8 +727,7 @@ Echo: "[END] 経費承認フロー"
 - テストがカバーしている画面範囲
 ```
 
-#### HARファイルの活用
-
+**HARファイルの活用（hars/）**
 ```
 # 確認ポイント
 - APIレスポンス時間（目安: 200ms以下が理想、1秒以上は要改善）
@@ -625,8 +736,7 @@ Echo: "[END] 経費承認フロー"
 - Wait時間の妥当性検証
 ```
 
-#### DOM分析の活用
-
+**DOM分析の活用（doms/）**
 ```
 # 確認ポイント
 - data-testid属性の有無と命名
@@ -635,15 +745,83 @@ Echo: "[END] 経費承認フロー"
 - セレクタ改善の具体的な提案
 ```
 
-#### manifest.yamlの情報
+#### 8.2 Mobileテストのアーティファクト分析
 
+**スクリーンショットの活用（screenshots/）**
+```
+# 確認ポイント
+- 各画面でUI要素が適切に配置されているか
+- デバイスのノッチ・セーフエリアとの干渉
+- キーボード表示時のレイアウト崩れ
+- スクロール後の要素表示状態
+```
+
+**トレース分析（traces/）**
+```
+# 確認ポイント
+- タップ・スワイプ操作の応答時間
+- 画面遷移にかかる時間
+- アニメーション完了の待機
+```
+
+**コンソールログ分析（console_logs/）**
+```
+# 確認ポイント
+- アプリ内でのエラーログ
+- ネットワークエラー
+- クラッシュの前兆となるログ
+```
+
+#### 8.3 APIテストのアーティファクト分析
+
+**HARファイルの活用（hars/）**
+```
+# 確認ポイント
+- 各APIのレスポンス時間
+- リクエスト/レスポンスのペイロード確認
+- 認証ヘッダーの正しさ
+- エラーレスポンスの内容
+```
+
+**トレース分析（traces/）**
+```
+# 確認ポイント
+- API呼び出しの順序
+- 各リクエストの実行時間
+- リトライの発生有無
+```
+
+#### 8.4 manifest.yamlの情報
+
+**Webテストの場合**
 ```yaml
-# 参照できる情報
-- test_run_id: テスト実行ID
-- test_id: テストID
-- browser_type: 使用ブラウザ
-- browser_version: ブラウザバージョン
-- export_types: エクスポートされたアーティファクトの種類
+test_run_id: "SitSPGAijPeZDY9UEJifaQ-jr"
+test_id: "RE2ObHQFXFHunmXBT0idRQ-j"
+test_name: "[mabl-expense] Manager Login"
+test_type: "browser"
+browser: "chrome"
+browser_version: "142.0.7444.175"
+status: "passed"
+```
+
+**Mobileテストの場合**
+```yaml
+test_run_id: "MobileTestRunId-jr"
+test_id: "MobileTestId-j"
+test_name: "[mabl-expense-mobile] 新規経費申請作成"
+test_type: "mobile"
+device: "iPhone 14"
+os_version: "iOS 17.0"
+status: "passed"
+```
+
+**APIテストの場合**
+```yaml
+test_run_id: "ApiTestRunId-jr"
+test_id: "ApiTestId-j"
+test_name: "[mabl-expense-api] Reset Data"
+test_type: "api"
+status: "passed"
 ```
 
 ## 使用例
@@ -716,18 +894,41 @@ claude "
 ### アーティファクト分析（/tests/artifacts/ が存在する場合）
 - [ ] スクリーンショットで画面遷移を確認したか
 - [ ] HARファイルでAPIレスポンス時間を確認したか
-- [ ] DOMでセレクタの妥当性を検証したか
+- [ ] DOMでセレクタの妥当性を検証したか（Webテストのみ）
 - [ ] コンソールログでJavaScriptエラーがないか確認したか
 - [ ] パフォーマンスボトルネックを特定したか
+
+### Mobileテスト固有（/tests/steps/mobile/ が存在する場合）
+- [ ] タップ対象の要素サイズが十分か確認したか
+- [ ] デバイス回転のテストが必要か検討したか
+- [ ] アプリ起動・終了処理が適切か確認したか
+- [ ] オフライン時の挙動をテストしているか
+
+### APIテスト固有（/tests/steps/api/ が存在する場合）
+- [ ] HTTPステータスコードを適切に検証しているか
+- [ ] レスポンスボディの構造を検証しているか
+- [ ] 認証トークンを変数で管理しているか
+- [ ] エラーレスポンスのテストを実施しているか
+
+### テスト種別間連携（複数種別が存在する場合）
+- [ ] E2Eフローの整合性を確認したか
+- [ ] 共通データ（認証情報、テストデータ）が統一されているか
+- [ ] テストカバレッジの重複・漏れがないか確認したか
 
 ## 関連ファイル
 
 - 出力レポート: `/tests/reports/test_design_improvement_report.md`
-- テストステップCSV: `/tests/steps/*.csv`
-- テストアーティファクト: `/tests/artifacts/*/`（スクリーンショット、DOM、HAR、トレース等）
+- テストステップCSV:
+  - Webテスト: `/tests/steps/web/*.csv`
+  - Mobileテスト: `/tests/steps/mobile/*.csv`
+  - APIテスト: `/tests/steps/api/*.csv`
+- テストアーティファクト:
+  - Webテスト: `/tests/artifacts/web/*/`（スクリーンショット、DOM、HAR、トレース等）
+  - Mobileテスト: `/tests/artifacts/mobile/*/`（スクリーンショット、トレース等）
+  - APIテスト: `/tests/artifacts/api/*/`（HAR、トレース等）
 - APIエラー分析プロンプト: `/tests/prompts/api_error_analysis_prompt.md`（別途作成）
 - アーティファクトエクスポートプロンプト: `/tests/prompts/export_test_artifacts.md`
-- テスト一覧: `/tests/tests_in_mabl_expense.csv`
+- テストステップCSVエクスポートプロンプト: `/tests/prompts/export_test_steps_to_csv.md`
 
 ## 更新履歴
 
@@ -743,3 +944,8 @@ claude "
 | 2025-01-16 | エグゼクティブ・サマリーを追加: 現状評価、ビジョン、ロードマップ（即時〜1年）、優先度マトリクス、ビジネスインパクト |
 | 2026-01-28 | mabl-expense（経費管理アプリ）プロジェクト向けに更新: CSVフォーマット、テスト名、具体例を変更 |
 | 2026-01-28 | アーティファクト分析機能を追加: /tests/artifacts/のスクリーンショット、DOM、HAR、トレース、コンソールログを分析対象に追加 |
+| 2026-01-28 | Web/Mobile/APIテスト対応: ディレクトリ構造をweb/mobile/apiサブディレクトリに更新 |
+| 2026-01-28 | Mobileテスト固有の分析観点を追加: タップ・ジェスチャー、デバイス固有の考慮事項、アプリライフサイクル |
+| 2026-01-28 | APIテスト固有の分析観点を追加: リクエスト・レスポンス検証、認証・認可、データ整合性、パフォーマンス |
+| 2026-01-28 | テスト種別間連携の分析観点を追加: E2Eフロー整合性、共通データ管理、テストカバレッジ補完 |
+| 2026-01-28 | アーティファクト分析ガイドをテスト種別ごとに整理 |
