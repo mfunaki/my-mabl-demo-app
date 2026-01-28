@@ -1,0 +1,10 @@
+step_number,action,target,value,context
+1,Set viewport size,viewport,"width: 1080, height: 1440",Confirm Manager Login Page and Credentials
+2,Visit URL,app.url,-,Navigates to the application's URL
+3,Echo,-,--> Navigate to the Login Page,Log message
+4,Assert innerText,<div> element,経費管理 - Manager Login,Asserts manager login page is displayed
+5,Echo,-,--> Log in as a Manager User,Log message
+6,Set variable,taxi_expense_id,2,Confirm Taxi Expense Approval Status
+7,Click,承認 button,-,Clicks the Approve button for taxi expense
+8,Assert innerText,<table> element,Taxi employee ¥1,500 APPROVED,Verifies expense status is updated to APPROVED
+9,Echo,-,--> Confirm 'Taxi' Application Status Update to 'APPROVED',Log message
