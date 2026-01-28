@@ -250,7 +250,8 @@ style: |
 <!-- _class: body-compact -->
 # 自然言語からテストへ
 
-![bg right:40% contain](assets/ja/images/mabl-expense-manager.png)
+![bg right:40% vertical contain](assets/ja/images/mabl-expense-manager.png)
+![bg contain](assets/ja/images/mabl_testcreationagent_prompt.png)
 
 ## プロンプトによるテスト生成
 
@@ -270,6 +271,22 @@ mabl-expenseアプリに、管理者(manager)としてログインし、
 
 **ポイント**: 業務フローを伝えるだけでテストが完成
 **生成AIアサーション**: 件数や金額の検証もAIが自動判定
+
+---
+
+# mablが生成するテストの概要
+
+<div style="text-align: center; margin-top: 20px;">
+<img src="assets/ja/images/mabl_test_abstract.png" style="width: 60%; max-height: 60%;">
+</div>
+
+---
+
+# テスト生成環境の選択
+
+<div style="text-align: center; margin-top: 20px;">
+<img src="assets/ja/images/mabl_tca_buildapproach.png" style="width: 60%; max-height: 60%;">
+</div>
 
 ---
 

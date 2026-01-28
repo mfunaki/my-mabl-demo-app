@@ -56,22 +56,22 @@ mablでのテストを可能にするため、以下の `data-testid` を各要�
 * `password-input`: パスワード入力欄
 * `login-button`: ログインボタン
 
-**ダッシュボード:**
-* `total-count`: 件数表示
-* `total-amount`: 合計金額表示
+**ダッシュボード（サマリー情報 - 表示件数・合計金額の確認に使用）:**
+* `total-count`: 件数表示 → **経費の表示件数の確認に使用**
+* `total-amount`: 合計金額表示 → **経費の合計金額の確認に使用**
 * `reset-button`: 全データ削除ボタン
 * `logout-button`: ログアウトボタン
 * `error-message`: エラーメッセージ
 * `empty-message`: データなしメッセージ
 
-**経費テーブル（各行）:**
-* `expense-row-${id}`: 経費行
+**経費テーブル（各行 - 個々の申請内容の確認に使用）:**
+* `expense-row-${id}`: 経費行 → **申請の存在確認**
 * `expense-id-${id}`: ID列
-* `expense-title-${id}`: タイトル列
-* `expense-applicant-${id}`: 申請者列
-* `expense-amount-${id}`: 金額列
-* `expense-status-${id}`: ステータス列
+* `expense-title-${id}`: タイトル列 → **申請タイトルの確認**
+* `expense-applicant-${id}`: 申請者列 → **申請者の確認**
+* `expense-amount-${id}`: 金額列 → **金額の確認**
+* `expense-status-${id}`: ステータス列 → **承認前後のステータス確認**
 * `expense-created-${id}`: 申請日時列
-* `approve-button-${id}`: 承認ボタン
+* `approve-button-${id}`: 承認ボタン → **承認操作**
 
 このプロンプトへの回答として、主要なソースコード（`page.tsx`, `layout.tsx`, `ExpenseTable.tsx`, APIクライアント等）を出力してください。

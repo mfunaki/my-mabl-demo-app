@@ -67,13 +67,20 @@ mabl-expenseアプリのモバイル版に、従業員(employee)としてログ�
 **自然言語プロンプト:**
 ```
 mabl-expenseアプリに、管理者(manager)としてログインし、
-部下が申請した経費を確認した上で、未承認の申請を承認するテストを作成して
+部下が申請した経費の表示件数や合計金額、個々の申請の内容を確認した上で、
+未承認の申請を承認するテストを作成して。出力は必ず日本語で。
 ```
 
 **テスト内容:**
 - ログイン画面で `manager` / `manager123` を入力
 - ダッシュボードで経費一覧を表示
-- 経費の件数(未承認件数)、合計金額をチェック（生成AIアサーション）
+- **経費の表示件数をチェック**（生成AIアサーション: `total-count`）
+- **合計金額をチェック**（生成AIアサーション: `total-amount`）
+- **個々の申請の内容を確認**:
+  - タイトル（`expense-title-{id}`）
+  - 金額（`expense-amount-{id}`）
+  - 申請者（`expense-applicant-{id}`）
+  - ステータス（`expense-status-{id}`）
 - ステータスが PENDING の経費を探す
 - 承認ボタンをクリック
 - ステータスが APPROVED に変わることを検証
@@ -82,11 +89,14 @@ mabl-expenseアプリに、管理者(manager)としてログインし、
 - `username-input`: ユーザー名入力
 - `password-input`: パスワード入力
 - `login-button`: ログインボタン
-- `total-count`: 件数表示
-- `total-amount`: 合計金額表示
-- `expense-row-{id}`: 経費行
-- `expense-status-{id}`: ステータス列
-- `approve-button-{id}`: 承認ボタン
+- `total-count`: 件数表示 → **表示件数の確認**
+- `total-amount`: 合計金額表示 → **合計金額の確認**
+- `expense-row-{id}`: 経費行 → **申請の存在確認**
+- `expense-title-{id}`: タイトル列 → **申請タイトルの確認**
+- `expense-amount-{id}`: 金額列 → **金額の確認**
+- `expense-applicant-{id}`: 申請者列 → **申請者の確認**
+- `expense-status-{id}`: ステータス列 → **ステータスの確認**
+- `approve-button-{id}`: 承認ボタン → **承認操作**
 - `logout-button`: ログアウトボタン
 
 ---
@@ -202,3 +212,15 @@ mablの生成AIアサーション機能を活用する箇所を明示してく�
 - `/docs/prompts/11-api-test.md` - APIテスト仕様書
 - `/docs/prompts/12-web-test.md` - Webテスト仕様書
 - `/docs/prompts/13-mobile-test.md` - Mobileテスト仕様書
+
+---
+
+## 出力言語
+
+生成するテスト仕様書（11-api-test.md, 12-web-test.md, 13-mobile-test.md）は、
+すべて**日本語**で記述してください。
+
+- ステップの説明
+- 検証項目の記述
+- トラブルシューティング
+- すべてのセクションを日本語で出力

@@ -75,9 +75,15 @@ enum ExpenseStatus {
 
 ## 7. mablテストシナリオ
 1. [API] `/api/reset` で初期化。
-2. [Mobile] `employee` でログインし、経費申請 -> `PENDING` 確認。
-3. [Web] `manager` でログインし、該当申請を承認 -> `APPROVED` 確認。
+2. [Mobile] `employee` でログインし、経費申請（Taxi / 1500） -> `PENDING` 確認。
+3. [Web] `manager` でログインし、以下を確認・実行：
+   - 経費の表示件数と合計金額をチェック（生成AIアサーション）
+   - 個々の申請の内容（タイトル、金額、申請者、ステータス）を確認
+   - 該当申請を承認 -> `APPROVED` 確認。
 4. [Mobile] Pull to Refresh し、ステータスが `APPROVED` に更新されたことを確認。
+
+### テスト出力言語
+mablテスト仕様書は**日本語**で出力すること。
 
 ## 8. 関連ドキュメント
 * `/docs/prompts/01-api.md`: API実装プロンプト
