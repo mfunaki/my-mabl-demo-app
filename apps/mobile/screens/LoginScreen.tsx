@@ -84,9 +84,6 @@ export default function LoginScreen({ navigation }: any) {
           </Text>
         </TouchableOpacity>
 
-        <Text style={styles.hint}>
-          Employee: employee / employee123
-        </Text>
       </View>
     </KeyboardAvoidingView>
   );

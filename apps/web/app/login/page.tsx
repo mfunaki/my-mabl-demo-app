@@ -75,9 +75,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="mt-4 text-sm text-gray-600 text-center">
-          <p>Manager: manager / manager123</p>
-        </div>
+
       </div>
     </div>
   );
